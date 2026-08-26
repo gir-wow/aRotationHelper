@@ -1,6 +1,6 @@
 -- aRotationHelper / ui/display.lua
 --
--- The overlay: one primary icon plus a dimmer forecast, a keybind, and a reason.
+-- The overlay: one primary icon plus a dimmer forecast and a keybind.
 --
 -- Two deliberate design rules:
 --   * The queue is a FORECAST, not a commitment. Steps 2-3 are drawn smaller and
@@ -48,17 +48,13 @@ local function makeIcon(parent, size)
     f.cooldown:SetPoint("CENTER", f, "CENTER", 0, 0)
     f.cooldown:SetTextColor(1, 1, 1, 1)
 
-    f.reason = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    f.reason:SetPoint("TOP", f, "BOTTOM", 0, -2)
-    f.reason:SetTextColor(0.8, 0.8, 0.8, 1)
-
     f:Hide()
     return f
 end
 
 function Display:Init()
     local root = CreateFrame("Frame", "aRotationHelperFrame", UIParent)
-    root:SetSize(ICON_MAIN + (ICON_QUEUE + PAD) * 2, ICON_MAIN + 18)
+    root:SetSize(ICON_MAIN + (ICON_QUEUE + PAD) * 2, ICON_MAIN)
     root:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 1100, 585)
     root:SetMovable(true)
     root:EnableMouse(true)
@@ -138,7 +134,6 @@ local function paint(frame, pick, isEmergency, caution, st)
     end
     frame.tex:SetTexture(icon)
     frame.key:SetText(pick.action.id and ns.Keybind:For(pick.action.id) or nil)
-    frame.reason:SetText(pick.reason)
     local remain = pick.action.id and st and st:CdRemain(pick.action.id) or 0
     frame.cooldown:SetText(remain and remain > 0 and ("%.1f"):format(remain) or "")
 
