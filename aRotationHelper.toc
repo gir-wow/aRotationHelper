@@ -25,6 +25,7 @@ rotations/death_knight_blood_default.lua
 # --- ui -----------------------------------------------------------------
 ui/export.lua
 ui/display.lua
+ui/options.lua
 
 # --- wiring (last: registers events and reads everything above) ---------
 aRotationHelper.lua

@@ -162,6 +162,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
         engine = ns.Engine.New()
         ns.Threat:Init()
         ns.Display:Init()
+        ns.Options:Init()
         loadRotation()
         refreshKnownSpells()
         if rotation then rotation:Rehydrate(state) end
