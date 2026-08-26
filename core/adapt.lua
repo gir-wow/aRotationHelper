@@ -419,6 +419,20 @@ local FILLER_BY_CLASS = {
 
 function Adapt:Filler(st)
     local _, classFile = UnitClass("player")
+    if classFile == "DEATHKNIGHT" then
+        -- Every supplied Blood APL has this as a hidden line: when Frost and
+        -- Unholy runes are still regenerating, spend the available Blood rune
+        -- rather than leaving an empty GCD. The strict shared-core line only
+        -- retained the two-Blood-rune cap case.
+        if st:SpellCanCast(S.HEART_STRIKE) then
+            return {
+                action = { op = "castSpell", id = S.HEART_STRIKE },
+                tier = ns.TIER.FILLER,
+                reason = "blood rune",
+            }
+        end
+        return nil
+    end
     local list = FILLER_BY_CLASS[classFile]
     if not list then return nil end
     for i = 1, #list do

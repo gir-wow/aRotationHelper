@@ -70,6 +70,11 @@ function Display:Init()
     self.main = makeIcon(root, ICON_MAIN)
     self.main:SetPoint("LEFT", root, "LEFT", 0, 0)
 
+    self.idle = root:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    self.idle:SetPoint("CENTER", self.main, "CENTER", 0, 0)
+    self.idle:SetTextColor(0.8, 0.8, 0.8, 1)
+    self.idle:Hide()
+
     self.queue = {}
     for i = 1, 2 do
         local f = makeIcon(root, ICON_QUEUE)
@@ -145,8 +150,12 @@ function Display:Render(queue, st)
     if not primary then
         self.main:Hide()
         for i = 1, #self.queue do self.queue[i]:Hide() end
+        self.idle:SetText("WAIT")
+        self.idle:Show()
         return
     end
+
+    self.idle:Hide()
 
     local isEmergency = primary.tier == ns.TIER.EMERGENCY
     local caution = (not isEmergency) and ns.Adapt:Caution(st) or false
@@ -191,6 +200,7 @@ function Display:Hide()
     if self.root then
         self.main:Hide()
         for i = 1, #self.queue do self.queue[i]:Hide() end
+        self.idle:Hide()
         self.prepull:Hide()
     end
 end
