@@ -30,7 +30,8 @@ end
 function Runes:PrintSnapshot()
     local snapshot = self:Snapshot()
     if not snapshot then
-        print("|cff33ff99aRotationHelper|r rune API unavailable on this client")
+        ns.Export:Add("rune API unavailable on this client")
+        ns.Export:ShowLog()
         return
     end
     local lines = { "aRotationHelper rune API snapshot", "", "slot: raw type, state" }
@@ -39,9 +40,6 @@ function Runes:PrintSnapshot()
         local state = rune.ready and "ready" or ("%.1fs"):format(rune.remain)
         lines[#lines + 1] = ("%d: type %s, %s"):format(slot, tostring(rune.type), state)
     end
-    if ns.Export then
-        ns.Export:Show("aRotationHelper — Rune API", table.concat(lines, "\n"))
-    else
-        for _, line in ipairs(lines) do print("|cff33ff99aRotationHelper|r " .. line) end
-    end
+    ns.Export:Add(table.concat(lines, "\n"))
+    ns.Export:ShowLog()
 end

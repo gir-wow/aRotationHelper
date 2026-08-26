@@ -7,6 +7,19 @@ local ADDON_NAME, ns = ...
 local Export = {}
 ns.Export = Export
 
+local entries = {}
+local MAX_ENTRIES = 200
+
+function Export:Add(text)
+    entries[#entries + 1] = date("%H:%M:%S") .. "  " .. tostring(text)
+    if #entries > MAX_ENTRIES then table.remove(entries, 1) end
+    if self.frame and self.frame:IsShown() then self:ShowLog() end
+end
+
+function Export:ShowLog()
+    self:Show("aRotationHelper — Log", table.concat(entries, "\n"))
+end
+
 function Export:Show(title, text)
     if not self.frame then
         local frame = CreateFrame("Frame", "aRotationHelperExportFrame", UIParent, "BasicFrameTemplateWithInset")

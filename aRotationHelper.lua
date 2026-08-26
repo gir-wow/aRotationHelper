@@ -12,8 +12,13 @@ ns.version = "0.1.0-phase1"
 -- ---------------------------------------------------------------------------
 function ns.Debug(msg)
     if ns.db and ns.db.debug then
-        print("|cff33ff99aRotationHelper|r " .. tostring(msg))
+        ns.Export:Add(msg)
     end
+end
+
+function ns.Log(msg)
+    ns.Export:Add(msg)
+    ns.Export:ShowLog()
 end
 
 -- ---------------------------------------------------------------------------
@@ -160,7 +165,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
         loadRotation()
         refreshKnownSpells()
         if rotation then rotation:Rehydrate(state) end
-        print(("|cff33ff99aRotationHelper|r %s loaded. /arh for options."):format(ns.version))
+        ns.Log(("%s loaded."):format(ns.version))
         return
     end
 
@@ -256,33 +261,29 @@ SlashCmdList["AROTATIONHELPER"] = function(msg)
 
     if cmd == "profile" and ns.PROFILES[arg] then
         ns.db.profile = arg
-        print("|cff33ff99aRotationHelper|r profile -> " .. ns.PROFILES[arg].label)
+        ns.Log("profile -> " .. ns.PROFILES[arg].label)
     elseif cmd == "debug" then
         ns.db.debug = not ns.db.debug
-        print("|cff33ff99aRotationHelper|r debug " .. (ns.db.debug and "on" or "off"))
+        ns.Log("debug " .. (ns.db.debug and "on" or "off"))
     elseif cmd == "lock" then
         ns.db.locked = not ns.db.locked
-        print("|cff33ff99aRotationHelper|r " .. (ns.db.locked and "locked" or "unlocked (drag to move)"))
+        ns.Log(ns.db.locked and "locked" or "unlocked (drag to move)")
     elseif cmd == "status" then
-        print("|cff33ff99aRotationHelper|r " .. ns.version)
-        print(("  profile: %s (emergency TTL %.1fs)"):format(ns.Adapt:Profile().label, ns.Adapt:EmergencyTTL()))
+        local lines = { ns.version, ("profile: %s (emergency TTL %.1fs)"):format(ns.Adapt:Profile().label, ns.Adapt:EmergencyTTL()) }
         if rotation then
-            print(("  rotation: %s -- %d/%d lines active"):format(rotation.data.key, #rotation.active, #rotation.all))
-            for _, d in ipairs(rotation.dropped) do print(("    dropped #%d: %s"):format(d.idx, d.why)) end
+            lines[#lines + 1] = ("rotation: %s -- %d/%d lines active"):format(rotation.data.key, #rotation.active, #rotation.all)
+            for _, d in ipairs(rotation.dropped) do lines[#lines + 1] = ("  dropped #%d: %s"):format(d.idx, d.why) end
         else
-            print("  rotation: none loaded")
+            lines[#lines + 1] = "rotation: none loaded"
         end
         local ttl = state and ns.Threat:TimeToLive(state)
-        print(("  targets: %d (%s)  ttl: %s"):format(
-            ns.Targets.lastCount, ns.Targets.mode, ttl and ("%.1fs"):format(ttl) or "n/a"))
+        lines[#lines + 1] = ("targets: %d (%s)  ttl: %s"):format(ns.Targets.lastCount, ns.Targets.mode, ttl and ("%.1fs"):format(ttl) or "n/a")
+        ns.Log(table.concat(lines, "\n"))
     elseif cmd == "runes" then
         ns.Runes:PrintSnapshot()
+    elseif cmd == "log" then
+        ns.Export:ShowLog()
     else
-        print("|cff33ff99aRotationHelper|r commands:")
-        print("  /arh profile defensive|balanced|offensive")
-        print("  /arh lock      -- lock/unlock frame position")
-        print("  /arh status    -- rotation + dropped lines + survival state")
-        print("  /arh runes     -- print raw live rune slot mapping (Blood DK support)")
-        print("  /arh debug     -- verbose logging")
+        ns.Log("commands:\n/arh profile defensive|balanced|offensive\n/arh lock\n/arh status\n/arh runes\n/arh log\n/arh debug")
     end
 end
