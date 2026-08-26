@@ -1301,11 +1301,15 @@ hourly points budget, so cache aggressively; one fight is a handful of queries.
 | Talents, glyphs, gear, set bonuses | **Yes** | `CombatantInfo` at pull — this is how you filter to the lines that were actually live (§1.3, §7.5) |
 | Incoming damage rate | **Yes** | `DamageTaken` events — enough to replay the survival tier's time-to-live (§5.2) |
 | Target count over time | **Yes, approximately** | count distinct enemy actors taking your damage in a rolling window |
-| Chi and energy | **Only with advanced combat logging** | resource fields on cast events. If the logger didn't have it enabled, you must *simulate* the resource economy forward from the cast sequence using Appendix A's costs |
+| Chi and energy | **Only with advanced combat logging** | resource fields on cast events. If the logger didn't have it enabled, the offline replay must *simulate* the resource economy forward from the cast sequence using Appendix A's costs |
 | Cooldown state | **Derivable** | cast timestamps plus known cooldowns |
 | GCD state | **Derivable** | cast timestamps plus haste from `CombatantInfo` |
 
-The chi/energy row is the only real gap, and it's tractable: given the cast
+This is an **offline Warcraft Logs replay** limitation only. The live addon reads
+both resources directly with `UnitPower("player", 3)` / `UnitPowerMax("player", 3)`
+for Energy and `UnitPower("player", 12)` / `UnitPowerMax("player", 12)` for Chi.
+
+The chi/energy row is the only real offline replay gap, and it's tractable: given the cast
 sequence and the costs in Appendix A, you can integrate resources forward and
 check for contradictions (a cast that would have been unaffordable means your
 model drifted — which is itself a useful signal).
