@@ -141,6 +141,14 @@ export const ECON = {
   116847: { energy: 40, cd: 6 },                                        // Rushing Jade Wind
   123904: { cd: 180 },                                                  // Invoke Xuen
   124507: {},                                                           // Gift of the Ox
+  49998: { runes: { RuneFrost: 1, RuneUnholy: 1 }, gainRunicPower: 20 }, // Death Strike
+  56815: { runicPower: 30 },                                             // Rune Strike
+  114867: { runes: { RuneBlood: 1 }, gainRunicPower: 10 },               // Soul Reaper
+  55050: { runes: { RuneBlood: 1 }, gainRunicPower: 10 },                // Heart Strike
+  48721: { runes: { RuneBlood: 1 }, gainRunicPower: 10 },                // Blood Boil
+  43265: { runes: { RuneUnholy: 1 }, gainRunicPower: 10 },               // Death and Decay
+  48982: { runes: { RuneBlood: 1 }, cd: 30 },                            // Rune Tap
+  57330: { gainRunicPower: 10, cd: 20 },                                 // Horn of Winter
 };
 
 export class MockState {
@@ -151,6 +159,7 @@ export class MockState {
     this.maxEnergy = 100;
     this.energyRegen = 10;
     this.runicPower = 0;
+    this.maxRunicPower = 100;
     this.runes = {};
     this.health = 100000;
     this.maxHealth = 100000;
@@ -209,6 +218,40 @@ export class MockState {
     return Math.max(0, (target - this.energy) / this.energyRegen);
   }
   ExecutePhase(threshold) { return this.targetHealthPct <= (threshold ?? 0.2); }
+  RuneCost(id) {
+    const cost = ECON[id]?.runes;
+    if ((id === 48721 || id === 43265) && this.AuraUp(81141)) return null;
+    return cost;
+  }
+  CanPayRunes(cost) {
+    if (!cost) return true;
+    const reserved = new Set();
+    for (const [kind, need] of Object.entries(cost)) {
+      for (let n = 0; n < need; n++) {
+        let slot = Object.keys(this.runes).find((i) => {
+          const r = this.runes[i]; return r.ready && !reserved.has(i) && r.kind === kind;
+        });
+        if (!slot) slot = Object.keys(this.runes).find((i) => {
+          const r = this.runes[i]; return r.ready && !reserved.has(i) && r.death;
+        });
+        if (!slot) return false;
+        reserved.add(slot);
+      }
+    }
+    return true;
+  }
+  SpendRunes(cost) {
+    if (!cost) return;
+    for (const [kind, need] of Object.entries(cost)) {
+      for (let n = 0; n < need; n++) {
+        let slot = Object.keys(this.runes).find((i) => this.runes[i].ready && this.runes[i].kind === kind);
+        if (!slot) slot = Object.keys(this.runes).find((i) => this.runes[i].ready && this.runes[i].death);
+        if (!slot) return;
+        this.runes[slot].ready = false;
+        this.runes[slot].remain = 10;
+      }
+    }
+  }
 
   SpellCanCast(id) {
     if (!this.known.has(id)) return false;
@@ -217,7 +260,9 @@ export class MockState {
     if (e) {
       if (e.energy && this.energy < e.energy) return false;
       if (e.chi && this.chi < e.chi) return false;
+      if (e.runicPower && this.runicPower < e.runicPower) return false;
     }
+    if (!this.CanPayRunes(this.RuneCost(id))) return false;
     return true;
   }
 
@@ -227,6 +272,8 @@ export class MockState {
     c.auras = {};
     for (const [id, a] of Object.entries(this.auras)) c.auras[id] = { ...a };
     c.cds = { ...this.cds };
+    c.runes = {};
+    for (const [slot, rune] of Object.entries(this.runes)) c.runes[slot] = { ...rune };
     c.known = this.known;
     c.knownAuras = this.knownAuras;
     return c;
@@ -238,7 +285,10 @@ export class MockState {
     if (e) {
       if (e.energy) this.energy = Math.max(0, this.energy - e.energy);
       if (e.chi) this.chi = Math.max(0, this.chi - e.chi);
+      if (e.runicPower) this.runicPower = Math.max(0, this.runicPower - e.runicPower);
+      this.SpendRunes(this.RuneCost(action.id));
       if (e.gainChi) this.chi = Math.min(this.maxChi, this.chi + e.gainChi);
+      if (e.gainRunicPower) this.runicPower = Math.min(this.maxRunicPower, this.runicPower + e.gainRunicPower);
       if (e.cd) this.cds[action.id] = e.cd;
       if (e.applies) {
         for (const [auraId, dur] of Object.entries(e.applies)) {
@@ -262,6 +312,12 @@ export class MockState {
     for (const id of Object.keys(this.cds)) {
       this.cds[id] = Math.max(0, this.cds[id] - dt);
       if (this.cds[id] <= 0) delete this.cds[id];
+    }
+    for (const rune of Object.values(this.runes)) {
+      if (!rune.ready) {
+        rune.remain = Math.max(0, (rune.remain ?? 0) - dt);
+        if (rune.remain <= 0) rune.ready = true;
+      }
     }
   }
 }

@@ -81,6 +81,7 @@ function State.New()
     s.chi, s.maxChi = 0, 4
     s.energy, s.maxEnergy, s.energyRegen = 0, 100, 10
     s.runicPower = 0
+    s.maxRunicPower = 100
     s.runes = {}
     s.health, s.maxHealth = 1, 1
     s.staggerPct = 0
@@ -112,6 +113,8 @@ function State:Refresh()
     self.energyRegen = 10 * (1 + haste())
 
     self.runicPower = UnitPower("player", POWER_RUNIC) or 0
+    self.maxRunicPower = UnitPowerMax("player", POWER_RUNIC) or 100
+    if self.maxRunicPower == 0 then self.maxRunicPower = 100 end
     self:RefreshRunes(now)
 
     self.health = UnitHealth("player") or 1
@@ -242,6 +245,52 @@ function State:Energy() return self.energy end
 function State:MaxEnergy() return self.maxEnergy end
 function State:EnergyRegen() return self.energyRegen end
 function State:RunicPower() return self.runicPower end
+function State:CanPayRunes(cost)
+    if not cost then return true end
+    local reserved = {}
+    for kind, need in pairs(cost) do
+        for _ = 1, need do
+            local slot
+            -- Spend the matching rune before a Death rune, preserving flexible
+            -- runes for the later forecast steps.
+            for i = 1, 6 do
+                local r = self.runes[i]
+                if r and r.ready and not reserved[i] and r.kind == kind then slot = i; break end
+            end
+            if not slot then
+                for i = 1, 6 do
+                    local r = self.runes[i]
+                    if r and r.ready and not reserved[i] and r.death then slot = i; break end
+                end
+            end
+            if not slot then return false end
+            reserved[slot] = true
+        end
+    end
+    return true
+end
+
+function State:SpendRunes(cost)
+    if not cost then return end
+    for kind, need in pairs(cost) do
+        for _ = 1, need do
+            local slot
+            for i = 1, 6 do
+                local r = self.runes[i]
+                if r and r.ready and r.kind == kind then slot = i; break end
+            end
+            if not slot then
+                for i = 1, 6 do
+                    local r = self.runes[i]
+                    if r and r.ready and r.death then slot = i; break end
+                end
+            end
+            if not slot then return end
+            local rune = self.runes[slot]
+            rune.ready, rune.remain = false, 10
+        end
+    end
+end
 function State:RuneCount(kind)
     local count = 0
     for _, rune in pairs(self.runes) do
@@ -288,6 +337,8 @@ function State:SpellCanCast(id)
         if cost.chi and self.chi < cost.chi then return false end
         if cost.runicPower and self.runicPower < cost.runicPower then return false end
     end
+    local runeCost = ns.Adapt and ns.Adapt:RuneCostOf(id, self) or nil
+    if runeCost and not self:CanPayRunes(runeCost) then return false end
     if not self.projected then
         -- IsUsableSpell covers stance, form and resource checks the client knows
         -- about; treat "no mana/energy" as usable-but-not-yet so the projection
@@ -313,9 +364,10 @@ end
 function State:Clone()
     local c = setmetatable({}, State)
     for k, v in pairs(self) do c[k] = v end
-    c.auras, c.cds = {}, {}
+    c.auras, c.cds, c.runes = {}, {}, {}
     for id, a in pairs(self.auras) do c.auras[id] = { remain = a.remain, stacks = a.stacks } end
     for id, d in pairs(self.cds) do c.cds[id] = { remain = d.remain, duration = d.duration } end
+    for slot, r in pairs(self.runes) do c.runes[slot] = { kind = r.kind, death = r.death, ready = r.ready, remain = r.remain } end
     c.knownSpells = self.knownSpells
     c.knownAuras = self.knownAuras
     c.projected = true
@@ -338,10 +390,13 @@ function State:ApplyCast(action)
         if cost.chi then self.chi = math.max(0, self.chi - cost.chi) end
         if cost.runicPower then self.runicPower = math.max(0, self.runicPower - cost.runicPower) end
     end
+    local runeCost = adapt and adapt:RuneCostOf(id, self)
+    if runeCost then self:SpendRunes(runeCost) end
     local gain = adapt and adapt:GainOf(id)
     if gain then
         if gain.chi then self.chi = math.min(self.maxChi, self.chi + gain.chi) end
         if gain.energy then self.energy = math.min(self.maxEnergy, self.energy + gain.energy) end
+        if gain.runicPower then self.runicPower = math.min(self.maxRunicPower, self.runicPower + gain.runicPower) end
     end
 
     local cd = adapt and adapt:CooldownOf(id) or 0
@@ -372,4 +427,10 @@ function State:AdvanceTime(dt)
     for _, a in pairs(self.auras) do a.remain = math.max(0, a.remain - dt) end
     for id, a in pairs(self.auras) do if a.remain <= 0 then self.auras[id] = nil end end
     for _, c in pairs(self.cds) do c.remain = math.max(0, c.remain - dt) end
+    for _, rune in pairs(self.runes) do
+        if not rune.ready then
+            rune.remain = math.max(0, (rune.remain or 0) - dt)
+            if rune.remain <= 0 then rune.ready = true end
+        end
+    end
 end

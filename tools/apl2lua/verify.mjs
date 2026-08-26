@@ -392,6 +392,19 @@ console.log('--- Blood DK core ---');
   pick = pickRotation(activeLines(bloodRotation, runic), runic);
   check('Blood DK dumps high runic power with Rune Strike', pick?.action?.id === 56815,
     `got ${pick?.action?.id ?? 'nothing'}`);
+
+  const forecast = [];
+  let scratch = bloodState();
+  for (let i = 0; i < 3; i++) {
+    const next = pickRotation(activeLines(bloodRotation, scratch), scratch);
+    if (!next) break;
+    forecast.push(next.action.id);
+    scratch.applyCast(next.action);
+  }
+  check('Blood DK forecast produces three projected actions', forecast.length === 3,
+    `got [${forecast.join(', ')}]`);
+  check('Blood DK forecast spends resources instead of repeating Death Strike',
+    !(forecast[0] === 49998 && forecast[1] === 49998), `got [${forecast.join(', ')}]`);
 }
 
 // ---------------------------------------------------------------------------

@@ -53,6 +53,16 @@ local S = {
     ELUSIVE_BREW_STACKS = 128938,
     VENGEANCE_MONK = 120267,
     VENGEANCE_DK = 93099,
+    -- death knight / blood
+    DEATH_STRIKE = 49998,
+    RUNE_STRIKE = 56815,
+    SOUL_REAPER = 114867,
+    HEART_STRIKE = 55050,
+    BLOOD_BOIL = 48721,
+    DEATH_AND_DECAY = 43265,
+    RUNE_TAP = 48982,
+    HORN_OF_WINTER = 57330,
+    CRIMSON_SCOURGE = 81141,
     STAGGER_LIGHT = 124275,
     STAGGER_MODERATE = 124274,
     STAGGER_HEAVY = 124273,
@@ -85,6 +95,16 @@ local ECON = {
     [S.BREATH_OF_FIRE] = { chi = 2, cd = 8 },
     [S.INVOKE_XUEN]    = { cd = 180 },
     [S.GIFT_OF_THE_OX] = {},
+    -- Blood DK. Rune regeneration is represented by State, since it is a
+    -- property of each individual rune rather than an action cooldown.
+    [S.DEATH_STRIKE]   = { runes = { RuneFrost = 1, RuneUnholy = 1 }, gainRunicPower = 20 },
+    [S.RUNE_STRIKE]    = { runicPower = 30 },
+    [S.SOUL_REAPER]    = { runes = { RuneBlood = 1 }, gainRunicPower = 10 },
+    [S.HEART_STRIKE]   = { runes = { RuneBlood = 1 }, gainRunicPower = 10 },
+    [S.BLOOD_BOIL]     = { runes = { RuneBlood = 1 }, gainRunicPower = 10 },
+    [S.DEATH_AND_DECAY]= { runes = { RuneUnholy = 1 }, gainRunicPower = 10 },
+    [S.RUNE_TAP]       = { runes = { RuneBlood = 1 }, cd = 30 },
+    [S.HORN_OF_WINTER] = { gainRunicPower = 10, cd = 20 },
 }
 
 -- Brewmaster's Tiger Palm is free: no chi and no energy. This is not an omission.
@@ -102,8 +122,18 @@ function Adapt:CostOf(id)
 end
 function Adapt:GainOf(id)
     local e = ECON[id]
-    if not e or not e.gainChi then return nil end
-    return { chi = e.gainChi }
+    if not e then return nil end
+    if not (e.gainChi or e.gainEnergy or e.gainRunicPower) then return nil end
+    return { chi = e.gainChi, energy = e.gainEnergy, runicPower = e.gainRunicPower }
+end
+function Adapt:RuneCostOf(id, st)
+    local e = ECON[id]
+    if not e or not e.runes then return nil end
+    -- Crimson Scourge makes the next Blood Boil or Death and Decay free.
+    if (id == S.BLOOD_BOIL or id == S.DEATH_AND_DECAY) and st:AuraUp(S.CRIMSON_SCOURGE) then
+        return nil
+    end
+    return e.runes
 end
 function Adapt:CooldownOf(id)
     local e = ECON[id]

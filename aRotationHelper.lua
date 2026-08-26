@@ -88,8 +88,6 @@ local function update()
     state:Refresh()
 
     local depth = (ns.db and ns.db.queueDepth) or 3
-    local _, classFile = UnitClass("player")
-    if classFile == "DEATHKNIGHT" then depth = 1 end
     lastQueue = engine:Queue(state, depth)
     ns.Display:Render(lastQueue, state)
 
