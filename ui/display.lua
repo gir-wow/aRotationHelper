@@ -150,14 +150,19 @@ function Display:Render(queue, st)
     local primary = queue and queue[1]
     if not primary then
         self.idle:Hide()
-        -- Keep the last actionable forecast visible while resources or a
-        -- cooldown recover. Removing all icons is less useful than showing
-        -- the cooldown on the next button.
-        if st and st:HasTarget() and self.lastQueue and self.lastQueue[1] then
-            paint(self.main, self.lastQueue[1], false, false, st)
-            for i = 1, #self.queue do
-                paint(self.queue[i], self.lastQueue[i + 1], false, false, st)
+        -- Keep a previous icon only while its real cooldown recovers. A stale
+        -- resource-bound action (such as Rune Strike after its RP was spent)
+        -- must never look like a live recommendation.
+        local function showCooldown(frame, pick)
+            if pick and pick.action and pick.action.id and st:CdRemain(pick.action.id) > 0 then
+                paint(frame, pick, false, false, st)
+            else
+                frame:Hide()
             end
+        end
+        if st and st:HasTarget() and self.lastQueue and self.lastQueue[1] then
+            showCooldown(self.main, self.lastQueue[1])
+            for i = 1, #self.queue do showCooldown(self.queue[i], self.lastQueue[i + 1]) end
         else
             self.main:Hide()
             for i = 1, #self.queue do self.queue[i]:Hide() end
