@@ -48,18 +48,19 @@ local function forEachAura(unit, filter, fn)
     if AuraUtil and AuraUtil.ForEachAura then
         AuraUtil.ForEachAura(unit, filter, nil, function(...)
             local name, _, count, _, duration, expires = ...
+            local source = select(7, ...)
             local spellId = select(10, ...)
-            return fn(spellId, count, duration, expires, name)
+            return fn(spellId, count, duration, expires, name, source)
         end)
         return
     end
     local get = (filter == "HELPFUL") and UnitBuff or UnitDebuff
     if not get then return end
     for i = 1, 40 do
-        local name, _, count, _, duration, expires = get(unit, i)
+        local name, _, count, _, duration, expires, source = get(unit, i)
         if not name then return end
         local spellId = select(10, get(unit, i))
-        if fn(spellId, count, duration, expires, name) then return end
+        if fn(spellId, count, duration, expires, name, source) then return end
     end
 end
 
@@ -75,6 +76,7 @@ end
 function State.New()
     local s = setmetatable({}, State)
     s.auras = {}        -- [spellId] = { remain, stacks }
+    s.targetAuras = {}  -- player-applied debuffs on the current target
     s.cds = {}          -- [spellId] = { remain, duration }
     s.knownSpells = {}  -- [spellId] = true
     s.knownAuras = {}   -- [spellId] = true  (aura seen at least once this session)
@@ -89,6 +91,7 @@ function State.New()
     s.combatTime = 0
     s.numTargets = 1
     s.targetHealthPct = 1
+    s.hasTarget = false
     s.inFront = true
     s.moving = false
     s.inputDelay = 0.15
@@ -138,6 +141,18 @@ function State:Refresh()
         }
         self.knownAuras[spellId] = true
     end)
+
+    wipe(self.targetAuras)
+    self.hasTarget = UnitExists("target") and UnitCanAttack("player", "target") or false
+    if self.hasTarget then
+        forEachAura("target", "HARMFUL", function(spellId, count, duration, expires, _, source)
+            if not spellId or source ~= "player" then return end
+            self.targetAuras[spellId] = {
+                remain = expires and expires > 0 and math.max(0, expires - now) or 3600,
+                stacks = count or 0,
+            }
+        end)
+    end
 
     self.staggerPct = self:ComputeStaggerPct()
     self.gcdRemain = self:ComputeGcdRemain()
@@ -203,6 +218,8 @@ function State:AuraRemain(id) local a = self.auras[id]; return a and a.remain or
 function State:AuraUp(id) return self:AuraRemain(id) > 0 end
 function State:AuraDown(id) return self:AuraRemain(id) <= 0 end
 function State:AuraStacks(id) local a = self.auras[id]; return a and a.stacks or 0 end
+function State:TargetAuraRemain(id) local a = self.targetAuras[id]; return a and a.remain or 0 end
+function State:HasTarget() return self.hasTarget == true end
 
 --- "Is this aura something my character can produce at all?"
 -- Used by APL lines gated on set bonuses and talents (`auraIsKnown`). The sim
@@ -364,8 +381,9 @@ end
 function State:Clone()
     local c = setmetatable({}, State)
     for k, v in pairs(self) do c[k] = v end
-    c.auras, c.cds, c.runes = {}, {}, {}
+    c.auras, c.targetAuras, c.cds, c.runes = {}, {}, {}, {}
     for id, a in pairs(self.auras) do c.auras[id] = { remain = a.remain, stacks = a.stacks } end
+    for id, a in pairs(self.targetAuras) do c.targetAuras[id] = { remain = a.remain, stacks = a.stacks } end
     for id, d in pairs(self.cds) do c.cds[id] = { remain = d.remain, duration = d.duration } end
     for slot, r in pairs(self.runes) do c.runes[slot] = { kind = r.kind, death = r.death, ready = r.ready, remain = r.remain } end
     c.knownSpells = self.knownSpells
@@ -413,6 +431,12 @@ function State:ApplyCast(action)
             }
         end
     end
+    local appliesTarget = adapt and adapt:AppliesTargetAuras(id)
+    if appliesTarget then
+        for auraId, dur in pairs(appliesTarget) do
+            self.targetAuras[auraId] = { remain = dur, stacks = 1 }
+        end
+    end
 
     -- advance time by one GCD
     local step = math.max(self.baseGcd, self.gcdRemain)
@@ -426,6 +450,8 @@ function State:AdvanceTime(dt)
     self.gcdRemain = 0
     for _, a in pairs(self.auras) do a.remain = math.max(0, a.remain - dt) end
     for id, a in pairs(self.auras) do if a.remain <= 0 then self.auras[id] = nil end end
+    for _, a in pairs(self.targetAuras) do a.remain = math.max(0, a.remain - dt) end
+    for id, a in pairs(self.targetAuras) do if a.remain <= 0 then self.targetAuras[id] = nil end end
     for _, c in pairs(self.cds) do c.remain = math.max(0, c.remain - dt) end
     for _, rune in pairs(self.runes) do
         if not rune.ready then

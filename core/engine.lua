@@ -197,7 +197,8 @@ function Engine:Rotation(S)
     if not rot or not rot.active then return nil end
     for i = 1, #rot.active do
         local line = rot.active[i]
-        if truthy(eval(line.cond, S)) and actionReady(line.action, S) then
+        if (not ns.Adapt or ns.Adapt:AllowRotation(line.action, S))
+            and truthy(eval(line.cond, S)) and actionReady(line.action, S) then
             return {
                 action = line.action,
                 tier = TIER.ROTATION,
@@ -216,6 +217,9 @@ function Engine:Evaluate(S)
     -- Tier 0: survival pre-empts everything.
     local emergency = ns.Adapt and ns.Adapt:Emergency(S) or nil
     if emergency then return emergency end
+
+    local maintenance = ns.Adapt and ns.Adapt:Maintenance(S) or nil
+    if maintenance then return maintenance end
 
     local pick = self:Rotation(S)
     if pick then return pick end

@@ -63,6 +63,10 @@ local S = {
     RUNE_TAP = 48982,
     HORN_OF_WINTER = 57330,
     CRIMSON_SCOURGE = 81141,
+    BONE_SHIELD = 49222,
+    OUTBREAK = 77575,
+    BLOOD_PLAGUE = 55078,
+    FROST_FEVER = 55095,
     STAGGER_LIGHT = 124275,
     STAGGER_MODERATE = 124274,
     STAGGER_HEAVY = 124273,
@@ -105,6 +109,8 @@ local ECON = {
     [S.DEATH_AND_DECAY]= { runes = { RuneUnholy = 1 }, gainRunicPower = 10 },
     [S.RUNE_TAP]       = { runes = { RuneBlood = 1 }, cd = 30 },
     [S.HORN_OF_WINTER] = { gainRunicPower = 10, cd = 20 },
+    [S.BONE_SHIELD]    = { cd = 60, applies = { [S.BONE_SHIELD] = 300 } },
+    [S.OUTBREAK]       = { cd = 60, appliesTarget = { [S.BLOOD_PLAGUE] = 30, [S.FROST_FEVER] = 30 } },
 }
 
 -- Brewmaster's Tiger Palm is free: no chi and no energy. This is not an omission.
@@ -142,6 +148,10 @@ end
 function Adapt:AppliesAuras(id)
     local e = ECON[id]
     return e and e.applies or nil
+end
+function Adapt:AppliesTargetAuras(id)
+    local e = ECON[id]
+    return e and e.appliesTarget or nil
 end
 
 -- ---------------------------------------------------------------------------
@@ -347,6 +357,41 @@ function Adapt:Caution(st)
     local ttl = ns.Threat:TimeToLive(st)
     if ttl == nil then return false end
     return ttl <= (self:Config().cautionTTL or self:Profile().cautionTTL)
+end
+
+-- ---------------------------------------------------------------------------
+-- Blood DK maintenance
+-- ---------------------------------------------------------------------------
+-- The supplied Blood WeakAura and the encounter APLs both keep Bone Shield up
+-- and refresh both diseases with Outbreak. The generic sim preset omits those
+-- encounter-specific lines, so they belong in this live-state layer.
+function Adapt:Maintenance(st)
+    local _, classFile = UnitClass("player")
+    if classFile ~= "DEATHKNIGHT" then return nil end
+
+    if st:SpellCanCast(S.BONE_SHIELD)
+        and (not st:AuraUp(S.BONE_SHIELD) or st:AuraStacks(S.BONE_SHIELD) <= 3) then
+        return {
+            action = { op = "castSpell", id = S.BONE_SHIELD },
+            tier = ns.TIER.MAINTENANCE,
+            reason = "Bone Shield",
+        }
+    end
+
+    if st:HasTarget() and st:SpellCanCast(S.OUTBREAK)
+        and (st:TargetAuraRemain(S.BLOOD_PLAGUE) <= 1 or st:TargetAuraRemain(S.FROST_FEVER) <= 1) then
+        return {
+            action = { op = "castSpell", id = S.OUTBREAK },
+            tier = ns.TIER.MAINTENANCE,
+            reason = "diseases",
+        }
+    end
+    return nil
+end
+
+function Adapt:AllowRotation(action, st)
+    local _, classFile = UnitClass("player")
+    return classFile ~= "DEATHKNIGHT" or st:HasTarget()
 end
 
 -- ---------------------------------------------------------------------------

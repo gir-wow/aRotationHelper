@@ -39,15 +39,16 @@ local BUTTON_PATTERNS = {
 }
 
 local ABBREV = {
-    ["SHIFT%-"] = "S", ["CTRL%-"] = "C", ["ALT%-"] = "A",
-    ["BUTTON"] = "M", ["MOUSEWHEELUP"] = "WU", ["MOUSEWHEELDOWN"] = "WD",
-    ["NUMPAD"] = "N", ["SPACE"] = "Sp",
+    { "MOUSE WHEEL DOWN", "WD" }, { "MOUSE WHEEL UP", "WU" },
+    { "MOUSEWHEELDOWN", "WD" }, { "MOUSEWHEELUP", "WU" },
+    { "SHIFT%-", "S" }, { "CTRL%-", "C" }, { "ALT%-", "A" },
+    { "BUTTON", "M" }, { "NUMPAD", "N" }, { "SPACE", "Sp" },
 }
 
 local function abbreviate(key)
     if not key or key == "" then return nil end
     local out = key:upper()
-    for pat, rep in pairs(ABBREV) do out = out:gsub(pat, rep) end
+    for _, rule in ipairs(ABBREV) do out = out:gsub(rule[1], rule[2]) end
     return out
 end
 
