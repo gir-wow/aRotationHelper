@@ -122,7 +122,9 @@ ns.SPEC_ROTATIONS = {
 --- Pick the rotation for the current class + spec, or nil if unsupported.
 function ns.ResolveRotation()
     local _, classFile = UnitClass("player")
-    local specIndex = GetSpecialization and GetSpecialization() or nil
+    local getSpec = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization
+        or GetSpecialization
+    local specIndex = getSpec and getSpec() or nil
     -- MoP Classic can leave GetSpecialization() nil while the character is
     -- loading. Its compatibility primary-tree API returns the same 1..3 index.
     if not specIndex and GetPrimaryTalentTree then
