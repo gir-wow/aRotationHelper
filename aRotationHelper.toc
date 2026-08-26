@@ -2,7 +2,7 @@
 ## Title: aRotationHelper
 ## Notes: Next-action rotation advice generated from wowsims APL data, adapted to live state.
 ## Author: clwi
-## Version: 0.1.0-phase14
+## Version: 0.1.0-phase15
 ## SavedVariables: aRotationHelperDB
 ## DefaultState: enabled
 
