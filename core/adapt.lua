@@ -67,6 +67,7 @@ local S = {
     OUTBREAK = 77575,
     BLOOD_PLAGUE = 55078,
     FROST_FEVER = 55095,
+    RAISE_DEAD = 46584,
     STAGGER_LIGHT = 124275,
     STAGGER_MODERATE = 124274,
     STAGGER_HEAVY = 124273,
@@ -111,6 +112,7 @@ local ECON = {
     [S.HORN_OF_WINTER] = { gainRunicPower = 10, cd = 20 },
     [S.BONE_SHIELD]    = { cd = 60, applies = { [S.BONE_SHIELD] = 300 } },
     [S.OUTBREAK]       = { cd = 60, appliesTarget = { [S.BLOOD_PLAGUE] = 30, [S.FROST_FEVER] = 30 } },
+    [S.RAISE_DEAD]     = { cd = 120, summonsPet = true },
 }
 
 -- Brewmaster's Tiger Palm is free: no chi and no energy. This is not an omission.
@@ -152,6 +154,10 @@ end
 function Adapt:AppliesTargetAuras(id)
     local e = ECON[id]
     return e and e.appliesTarget or nil
+end
+function Adapt:SummonsPet(id)
+    local e = ECON[id]
+    return e and e.summonsPet or false
 end
 
 -- ---------------------------------------------------------------------------
@@ -384,6 +390,14 @@ function Adapt:Maintenance(st)
             action = { op = "castSpell", id = S.OUTBREAK },
             tier = ns.TIER.MAINTENANCE,
             reason = "diseases",
+        }
+    end
+
+    if st:HasTarget() and not st:PetAlive() and st:SpellCanCast(S.RAISE_DEAD) then
+        return {
+            action = { op = "castSpell", id = S.RAISE_DEAD },
+            tier = ns.TIER.MAINTENANCE,
+            reason = "ghoul",
         }
     end
     return nil

@@ -106,6 +106,7 @@ function State.New()
     s.numTargets = 1
     s.targetHealthPct = 1
     s.hasTarget = false
+    s.petAlive = false
     s.inFront = true
     s.moving = false
     s.inputDelay = 0.15
@@ -185,6 +186,7 @@ function State:Refresh()
     end
 
     self.moving = (GetUnitSpeed and GetUnitSpeed("player") or 0) > 0
+    self.petAlive = UnitExists("pet") and not (UnitIsDead and UnitIsDead("pet")) or false
     self.combatTime = ns.Threat and ns.Threat:CombatTime() or 0
     self.numTargets = ns.Targets and ns.Targets:Count() or 1
 end
@@ -239,6 +241,7 @@ function State:AuraDown(id) return self:AuraRemain(id) <= 0 end
 function State:AuraStacks(id) local a = self.auras[id]; return a and a.stacks or 0 end
 function State:TargetAuraRemain(id) local a = self.targetAuras[id]; return a and a.remain or 0 end
 function State:HasTarget() return self.hasTarget == true end
+function State:PetAlive() return self.petAlive == true end
 
 --- "Is this aura something my character can produce at all?"
 -- Used by APL lines gated on set bonuses and talents (`auraIsKnown`). The sim
@@ -456,6 +459,7 @@ function State:ApplyCast(action)
             self.targetAuras[auraId] = { remain = dur, stacks = 1 }
         end
     end
+    if adapt and adapt:SummonsPet(id) then self.petAlive = true end
 
     -- advance time by one GCD
     local step = math.max(self.baseGcd, self.gcdRemain)
