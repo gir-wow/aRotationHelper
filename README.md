@@ -34,14 +34,20 @@ The deployed addon supports:
 
 ## Rotation source data
 
-Rotation logic is **generated**, not hand-written. The local `wowsims/` folder
-contains the MoP WowSims source data and WeakAura export used to generate the
-checked-in rotation file. It is intentionally excluded from Git because it is
-local reference data.
+Rotation logic is **generated**, not hand-written. The Brewmaster source APL and
+the small spell-name map required to build it are checked in under `data/`.
+The local `wowsims/` folder remains excluded from Git; it is reference data and
+contains the full MoP WowSims checkout plus the WeakAura export.
 
-The generator described in the findings report is not yet part of this repository,
-so `rotations/monk_brewmaster_default.lua` should be treated as generated output
-until that tooling is moved in. It must not be edited by hand.
+`rotations/monk_brewmaster_default.lua` must not be edited by hand. Rebuild and
+verify it with Node.js 22 or later:
+
+```bash
+npm run addon           # generate + verify
+npm run addon:build     # generate only
+npm run addon:verify    # offline checks, no WoW client
+npm run addon:lint      # lint the source APL without emitting
+```
 
 The intended generator refuses to emit a rotation containing an opcode it does
 not understand. A silently dropped priority line is the worst failure mode for a

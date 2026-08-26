@@ -1,0 +1,14 @@
+{
+  "name": "arotationhelper",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "addon:build": "node ./tools/apl2lua/apl2lua.mjs --spec monk/brewmaster --preset default",
+    "addon:verify": "node ./tools/apl2lua/verify.mjs",
+    "addon:lint": "node ./tools/apl2lua/apl2lua.mjs --spec monk/brewmaster --preset default --lint-only",
+    "addon": "npm run addon:build && npm run addon:verify"
+  }
+}

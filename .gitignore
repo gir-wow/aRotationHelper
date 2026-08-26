@@ -1,5 +1,6 @@
 # Local WowSims MoP source checkout and WeakAura export.
 wowsims/
+tools/apl2lua/out/
 
 # Local development files.
 .vs/

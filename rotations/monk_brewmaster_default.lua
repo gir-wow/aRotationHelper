@@ -1,5 +1,5 @@
 -- GENERATED FILE - do not edit by hand.
--- Source:    ui/monk/brewmaster/apls/default.apl.json
+-- Source:    data/apls/monk/brewmaster/default.apl.json
 -- Generator: tools/apl2lua/apl2lua.mjs
 -- Regenerate with:
 --   node tools/apl2lua/apl2lua.mjs --spec monk/brewmaster --preset default
@@ -14,7 +14,7 @@ ns.Rotations["MONK_BREWMASTER_DEFAULT"] = {
   key = "MONK_BREWMASTER_DEFAULT",
   spec = "monk/brewmaster",
   preset = "default",
-  source = "ui/monk/brewmaster/apls/default.apl.json",
+  source = "data/apls/monk/brewmaster/default.apl.json",
   prepull = {
     {
       idx = 1,
