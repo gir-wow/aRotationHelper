@@ -96,9 +96,9 @@ function Display:Init()
     -- Earlier versions saved the initial far-left placement, which means a
     -- changed default never reaches existing users. Move that one-time layout
     -- to the player's unit-frame area; later drag positions remain untouched.
-    if not ns.db.positionVersion or ns.db.positionVersion < 2 then
+    if not ns.db.positionVersion or ns.db.positionVersion < 3 then
         ns.db.pos = { "BOTTOMLEFT", "BOTTOMLEFT", 1100, 585 }
-        ns.db.positionVersion = 2
+        ns.db.positionVersion = 3
     end
     if ns.db.pos then
         root:ClearAllPoints()

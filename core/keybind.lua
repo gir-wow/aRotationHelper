@@ -48,6 +48,10 @@ local ABBREV = {
 local function abbreviate(key)
     if not key or key == "" then return nil end
     local out = key:upper()
+    -- ElvUI may supply this as text with variable whitespace rather than the
+    -- binding token (MOUSEWHEELDOWN), so normalise it before the generic map.
+    out = out:gsub("MOUSE%s*WHEEL%s*DOWN", "WD")
+    out = out:gsub("MOUSE%s*WHEEL%s*UP", "WU")
     for _, rule in ipairs(ABBREV) do out = out:gsub(rule[1], rule[2]) end
     return out
 end
