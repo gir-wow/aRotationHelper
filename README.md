@@ -47,7 +47,11 @@ npm run addon           # generate + verify
 npm run addon:build     # generate only
 npm run addon:verify    # offline checks, no WoW client
 npm run addon:lint      # lint the source APL without emitting
+npm run addon:derive:blood # derive the Blood DK core from its encounter presets
 ```
+
+Blood DK is data-preparation only for now: its derived core is deliberately not
+compiled until the live rune API mapping has been verified in the MoP client.
 
 The intended generator refuses to emit a rotation containing an opcode it does
 not understand. A silently dropped priority line is the worst failure mode for a

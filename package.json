@@ -6,6 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "addon:derive:blood": "node ./tools/apl2lua/derive.mjs --spec death_knight/blood --presets horridon,iron_juggernaut,sha --output default",
     "addon:build": "node ./tools/apl2lua/apl2lua.mjs --spec monk/brewmaster --preset default",
     "addon:verify": "node ./tools/apl2lua/verify.mjs",
     "addon:lint": "node ./tools/apl2lua/apl2lua.mjs --spec monk/brewmaster --preset default --lint-only",
