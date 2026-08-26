@@ -133,6 +133,8 @@ local function paint(frame, pick, isEmergency, caution, st)
         return
     end
     frame.tex:SetTexture(icon)
+    frame.tex:SetAlpha(1)
+    if frame.tex.SetDesaturated then frame.tex:SetDesaturated(false) end
     frame.key:SetText(pick.action.id and ns.Keybind:For(pick.action.id) or nil)
     local remain = pick.action.id and st and st:CdRemain(pick.action.id) or 0
     frame.cooldown:SetText(remain and remain > 0 and ("%.1f"):format(remain) or "")
@@ -144,18 +146,45 @@ local function paint(frame, pick, isEmergency, caution, st)
     frame:Show()
 end
 
+-- Preserve the overlay's visual position during a genuine resource wait without
+-- leaving a stale keybind on screen that could be mistaken for a recommendation.
+local function paintDormant(frame, pick)
+    if not pick then
+        frame:Hide()
+        return
+    end
+    local icon = iconFor(pick.action)
+    if not icon then
+        frame:Hide()
+        return
+    end
+    frame.tex:SetTexture(icon)
+    frame.tex:SetAlpha(0.18)
+    if frame.tex.SetDesaturated then frame.tex:SetDesaturated(true) end
+    frame.key:SetText("")
+    frame.cooldown:SetText("")
+    frame.border:SetColorTexture(0, 0, 0, 0.35)
+    frame:Show()
+end
+
 function Display:Render(queue, st)
     if not self.root then return end
 
     local primary = queue and queue[1]
     if not primary then
         self.idle:Hide()
-        self.main:Hide()
-        for i = 1, #self.queue do self.queue[i]:Hide() end
+        if st and st:HasTarget() and self.lastQueue then
+            paintDormant(self.main, self.lastQueue[1])
+            for i = 1, #self.queue do paintDormant(self.queue[i], self.lastQueue[i + 1]) end
+        else
+            self.main:Hide()
+            for i = 1, #self.queue do self.queue[i]:Hide() end
+        end
         return
     end
 
     self.idle:Hide()
+    self.lastQueue = queue
 
     local isEmergency = primary.tier == ns.TIER.EMERGENCY
     local caution = (not isEmergency) and ns.Adapt:Caution(st) or false
