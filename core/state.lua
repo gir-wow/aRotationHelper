@@ -492,7 +492,7 @@ function State:ApplyCast(action)
     if cd > 0 then self.cds[id] = { remain = cd, duration = cd } end
 
     -- self-applied auras (Shuffle from Blackout Kick, Tiger Power from Tiger Palm)
-    local applies = adapt and adapt:AppliesAuras(id)
+    local applies = adapt and adapt:AppliesAuras(id, self)
     if applies then
         for auraId, dur in pairs(applies) do
             local existing = self.auras[auraId]

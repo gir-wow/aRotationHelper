@@ -112,7 +112,7 @@ local ECON = {
     [S.BLOOD_BOIL]     = { runes = { RuneBlood = 1 }, gainRunicPower = 10 },
     [S.DEATH_AND_DECAY]= { runes = { RuneUnholy = 1 }, gainRunicPower = 10 },
     [S.RUNE_TAP]       = { runes = { RuneBlood = 1 }, cd = 30 },
-    [S.HORN_OF_WINTER] = { gainRunicPower = 10, cd = 20 },
+    [S.HORN_OF_WINTER] = { gainRunicPower = 10, cd = 20, applies = { [S.HORN_OF_WINTER] = 300 } },
     [S.BONE_SHIELD]    = { cd = 60, applies = { [S.BONE_SHIELD] = 300 } },
     [S.OUTBREAK]       = { cd = 60, appliesTarget = { [S.BLOOD_PLAGUE] = 30, [S.FROST_FEVER] = 30 } },
     [S.RAISE_DEAD]     = { cd = 120, summonsPet = true },
@@ -156,7 +156,10 @@ function Adapt:CooldownOf(id, st)
     local e = ECON[id]
     return e and e.cd or 0
 end
-function Adapt:AppliesAuras(id)
+function Adapt:AppliesAuras(id, st)
+    if id == S.HORN_OF_WINTER and st and st:HasGlyph(S.GLYPH_LONG_WINTER) then
+        return { [S.HORN_OF_WINTER] = 3600 }
+    end
     local e = ECON[id]
     return e and e.applies or nil
 end
@@ -422,6 +425,9 @@ function Adapt:AllowRotation(action, st)
     local _, classFile = UnitClass("player")
     if classFile ~= "DEATHKNIGHT" then return true end
     if not st:HasTarget() then return false end
+    -- Horn is a five-minute buff (one hour with Long Winter), not a rotational
+    -- button. Do not spend a GCD to refresh a buff that is still safely active.
+    if action and action.id == S.HORN_OF_WINTER and st:AuraRemain(S.HORN_OF_WINTER) > 10 then return false end
     -- Blood Boil replaces Heart Strike as the Blood-rune dump once the live
     -- target counter has held at three or more enemies long enough to enter
     -- AoE mode. Death Strike and Soul Reaper retain their earlier priorities.
