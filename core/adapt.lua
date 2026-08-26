@@ -56,7 +56,7 @@ local S = {
     -- death knight / blood
     DEATH_STRIKE = 49998,
     RUNE_STRIKE = 56815,
-    SOUL_REAPER = 114867,
+    SOUL_REAPER = 114866,
     HEART_STRIKE = 55050,
     BLOOD_BOIL = 48721,
     DEATH_AND_DECAY = 43265,

@@ -20,11 +20,33 @@ local Rotation = {}
 Rotation.__index = Rotation
 ns.Rotation = Rotation
 
+-- Wowsims represents spec variants as one spell id plus an ActionID tag. The
+-- game spellbook instead contains the concrete spell id. Blood Soul Reaper is
+-- the relevant case: APL 114867/tag 1 is live spell 114866.
+local LIVE_TAGGED_SPELLS = {
+    [114867] = { [1] = 114866, [2] = 130735, [3] = 130736 },
+}
+
+local function normalizeTaggedAction(line)
+    local action = line.action
+    if not action or not action.id or not action.tag then return end
+    local variants = LIVE_TAGGED_SPELLS[action.id]
+    local liveId = variants and variants[action.tag]
+    if not liveId then return end
+    local simulatedId = action.id
+    action.id = liveId
+    for i = 1, #(line.spells or {}) do
+        if line.spells[i] == simulatedId then line.spells[i] = liveId end
+    end
+end
+
 function Rotation.New(data)
     local r = setmetatable({}, Rotation)
     r.data = data
     r.all = data.lines or {}
     r.prepull = data.prepull or {}
+    for i = 1, #r.all do normalizeTaggedAction(r.all[i]) end
+    for i = 1, #r.prepull do normalizeTaggedAction(r.prepull[i]) end
     r.active = {}
     r.dropped = {}
     return r
