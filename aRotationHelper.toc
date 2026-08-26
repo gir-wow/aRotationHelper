@@ -22,6 +22,7 @@ core/rotation.lua
 rotations/monk_brewmaster_default.lua
 
 # --- ui -----------------------------------------------------------------
+ui/export.lua
 ui/display.lua
 
 # --- wiring (last: registers events and reads everything above) ---------
