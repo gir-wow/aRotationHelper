@@ -25,6 +25,7 @@ end
 -- state
 -- ---------------------------------------------------------------------------
 local engine, state, rotation
+local rotationError
 local UPDATE_THROTTLE = 0.1
 local accum = 0
 local lastQueue = {}
@@ -38,12 +39,14 @@ local function loadRotation()
     local data, err = ns.ResolveRotation()
     if not data then
         rotation = nil
+        rotationError = err
         if engine then engine:SetRotation(nil) end
         ns.Debug("no rotation: " .. tostring(err))
         if ns.Display then ns.Display:Hide() end
         return false
     end
     rotation = ns.Rotation.New(data)
+    rotationError = nil
     state:Refresh()
     rotation:Rehydrate(state)
     engine:SetRotation(rotation)
@@ -275,7 +278,7 @@ SlashCmdList["AROTATIONHELPER"] = function(msg)
             lines[#lines + 1] = ("rotation: %s -- %d/%d lines active"):format(rotation.data.key, #rotation.active, #rotation.all)
             for _, d in ipairs(rotation.dropped) do lines[#lines + 1] = ("  dropped #%d: %s"):format(d.idx, d.why) end
         else
-            lines[#lines + 1] = "rotation: none loaded"
+            lines[#lines + 1] = "rotation: none loaded -- " .. tostring(rotationError or "unknown reason")
         end
         local ttl = state and ns.Threat:TimeToLive(state)
         lines[#lines + 1] = ("targets: %d (%s)  ttl: %s"):format(ns.Targets.lastCount, ns.Targets.mode, ttl and ("%.1fs"):format(ttl) or "n/a")
