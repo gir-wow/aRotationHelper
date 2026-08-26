@@ -71,11 +71,16 @@ local function haste()
 end
 
 local function spellCooldown(id)
+    -- MoP Classic exposes this legacy API and it is authoritative for the
+    -- currently active spell cooldown. Prefer it over the compatibility API.
+    if GetSpellCooldown then
+        local start, duration, enabled = GetSpellCooldown(id)
+        if start ~= nil then return start, duration, enabled end
+    end
     if C_Spell and C_Spell.GetSpellCooldown then
         local info = C_Spell.GetSpellCooldown(id)
         if type(info) == "table" then return info.startTime, info.duration, info.isEnabled end
     end
-    if GetSpellCooldown then return GetSpellCooldown(id) end
     return nil, nil, nil
 end
 

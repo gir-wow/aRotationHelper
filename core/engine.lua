@@ -238,6 +238,21 @@ end
 function Engine:Queue(S, depth)
     depth = math.min(depth or 3, 3)
     local out = {}
+
+    -- The projected snapshot must inherit every relevant live cooldown. If we
+    -- only query the first chosen action, a later queue slot can incorrectly
+    -- treat an unqueried spell (for example Horn of Winter) as ready.
+    if not S.projected then
+        if self.rotation and self.rotation.active then
+            for i = 1, #self.rotation.active do
+                local action = self.rotation.active[i].action
+                if action and action.id then S:CdRemain(action.id) end
+            end
+        end
+        if ns.SpellIDs then
+            for _, id in pairs(ns.SpellIDs) do S:CdRemain(id) end
+        end
+    end
     local scratch = S:Clone()
     for i = 1, depth do
         local pick = self:Evaluate(scratch)
