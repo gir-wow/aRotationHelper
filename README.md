@@ -27,6 +27,7 @@ The deployed addon supports:
 
 ```
 /arh status                                   -- rotation, dropped lines, survival state
+/arh runes                                    -- raw live rune slot mapping for Blood DK support
 /arh profile defensive|balanced|offensive
 /arh lock                                     -- lock/unlock frame dragging
 /arh debug

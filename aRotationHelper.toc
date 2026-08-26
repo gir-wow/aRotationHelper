@@ -12,6 +12,7 @@ core/threat.lua
 core/targets.lua
 core/keybind.lua
 core/state.lua
+core/runes.lua
 core/engine.lua
 core/rotation.lua
 

@@ -266,11 +266,14 @@ SlashCmdList["AROTATIONHELPER"] = function(msg)
         local ttl = state and ns.Threat:TimeToLive(state)
         print(("  targets: %d (%s)  ttl: %s"):format(
             ns.Targets.lastCount, ns.Targets.mode, ttl and ("%.1fs"):format(ttl) or "n/a"))
+    elseif cmd == "runes" then
+        ns.Runes:PrintSnapshot()
     else
         print("|cff33ff99aRotationHelper|r commands:")
         print("  /arh profile defensive|balanced|offensive")
         print("  /arh lock      -- lock/unlock frame position")
         print("  /arh status    -- rotation + dropped lines + survival state")
+        print("  /arh runes     -- print raw live rune slot mapping (Blood DK support)")
         print("  /arh debug     -- verbose logging")
     end
 end
