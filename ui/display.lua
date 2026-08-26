@@ -55,7 +55,7 @@ end
 function Display:Init()
     local root = CreateFrame("Frame", "aRotationHelperFrame", UIParent)
     root:SetSize(ICON_MAIN + (ICON_QUEUE + PAD) * 2, ICON_MAIN + 18)
-    root:SetPoint("CENTER", UIParent, "CENTER", 0, -120)
+    root:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 350, 585)
     root:SetMovable(true)
     root:EnableMouse(true)
     root:RegisterForDrag("LeftButton")
