@@ -1087,6 +1087,19 @@ the wrong runes — and it would look *almost* right, which is worse than obviou
 broken. Put the mapping in one place in the generator, and verify it against a
 live `GetRuneType` sweep before trusting anything downstream.
 
+**Live correction.** `/arh runes` verified the MoP Classic client returns:
+
+```
+slot:     1      2      3      4      5       6
+type:     1      1      3      3      2       2
+meaning:  Blood  Blood  Frost  Frost  Unholy  Unholy
+```
+
+The slot order therefore matches the sim (`Blood, Blood, Frost, Frost, Unholy,
+Unholy`). Only the numeric type values differ: live Frost is `3` and live Unholy
+is `2`, while the APL uses `RuneFrost=2` and `RuneUnholy=3`. This correction
+supersedes the slot-order statement above.
+
 **Vengeance is a different spell ID** — `93099` for DKs, not the monk's `120267`
 — and the Blood APL gates Dancing Rune Weapon on `Vengeance >= 250000`. Same
 treatment as §4.1: normalise to a fraction of max health.
