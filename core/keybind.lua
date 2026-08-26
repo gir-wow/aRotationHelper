@@ -48,6 +48,19 @@ local ABBREV = {
 local function abbreviate(key)
     if not key or key == "" then return nil end
     local out = key:upper()
+    local modifier = ""
+    if out:find("SHIFT", 1, true) then modifier = modifier .. "S" end
+    if out:find("CTRL", 1, true) then modifier = modifier .. "C" end
+    if out:find("ALT", 1, true) then modifier = modifier .. "A" end
+    -- Do this as a direct classification. Hotkey text from bar addons is not a
+    -- stable binding token: it can be "MOUSE WHEEL DOWN", "MOUSEWHEELDOWN",
+    -- or a localized display string with embedded whitespace.
+    if out:find("MOUSE", 1, true) then
+        if out:find("DOWN", 1, true) then return modifier .. "WD" end
+        if out:find("UP", 1, true) then return modifier .. "WU" end
+        local button = out:match("BUTTON%s*(%d+)") or out:match("MOUSE%s*(%d+)")
+        return modifier .. "M" .. (button or "")
+    end
     -- ElvUI may supply this as text with variable whitespace rather than the
     -- binding token (MOUSEWHEELDOWN), so normalise it before the generic map.
     out = out:gsub("MOUSE%s*WHEEL%s*DOWN", "WD")
