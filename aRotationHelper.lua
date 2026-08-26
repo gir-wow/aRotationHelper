@@ -108,6 +108,7 @@ end)
 -- ---------------------------------------------------------------------------
 local EVENTS = {
     "PLAYER_LOGIN",
+    "PLAYER_ALIVE",
     "PLAYER_ENTERING_WORLD",
     "PLAYER_REGEN_DISABLED",
     "PLAYER_REGEN_ENABLED",
@@ -175,7 +176,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
 
     if not state then return end
 
-    if event == "PLAYER_SPECIALIZATION_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
+    if event == "PLAYER_SPECIALIZATION_CHANGED" or event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_ALIVE" then
         loadRotation()
         refreshKnownSpells()
         if rotation then rotation:Rehydrate(state) end

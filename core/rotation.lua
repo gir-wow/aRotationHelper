@@ -123,6 +123,11 @@ ns.SPEC_ROTATIONS = {
 function ns.ResolveRotation()
     local _, classFile = UnitClass("player")
     local specIndex = GetSpecialization and GetSpecialization() or nil
+    -- MoP Classic can leave GetSpecialization() nil while the character is
+    -- loading. Its compatibility primary-tree API returns the same 1..3 index.
+    if not specIndex and GetPrimaryTalentTree then
+        specIndex = GetPrimaryTalentTree()
+    end
     local byClass = ns.SPEC_ROTATIONS[classFile]
     if not byClass then return nil, ("no rotations for class %s"):format(tostring(classFile)) end
     if not specIndex then return nil, "no specialization yet (below level 10)" end
