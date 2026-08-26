@@ -143,7 +143,8 @@ function Adapt:RuneCostOf(id, st)
     end
     return e.runes
 end
-function Adapt:CooldownOf(id)
+function Adapt:CooldownOf(id, st)
+    if id == S.OUTBREAK and st and st:RunicCost(id) > 0 then return 0 end
     local e = ECON[id]
     return e and e.cd or 0
 end

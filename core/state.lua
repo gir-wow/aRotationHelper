@@ -92,6 +92,7 @@ function State.New()
     s.auras = {}        -- [spellId] = { remain, stacks }
     s.targetAuras = {}  -- player-applied debuffs on the current target
     s.cds = {}          -- [spellId] = { remain, duration }
+    s.runicCosts = {}   -- live spell costs; required for glyph/talent variants
     s.knownSpells = {}  -- [spellId] = true
     s.knownAuras = {}   -- [spellId] = true  (aura seen at least once this session)
     s.chi, s.maxChi = 0, 4
@@ -125,6 +126,7 @@ function State:Refresh()
     -- is an optimisation hint, not a reliable substitute: a zero cached before
     -- the cast must never make that spell appear usable afterwards.
     wipe(self.cds)
+    wipe(self.runicCosts)
 
     self.chi = UnitPower("player", POWER_CHI) or 0
     self.maxChi = UnitPowerMax("player", POWER_CHI) or 4
@@ -284,6 +286,23 @@ function State:Energy() return self.energy end
 function State:MaxEnergy() return self.maxEnergy end
 function State:EnergyRegen() return self.energyRegen end
 function State:RunicPower() return self.runicPower end
+function State:RunicCost(id)
+    local cached = self.runicCosts[id]
+    if cached ~= nil then return cached end
+    if not self.projected and GetSpellPowerCost then
+        local costs = GetSpellPowerCost(id)
+        if costs then
+            for i = 1, #costs do
+                local cost = costs[i]
+                if cost.type == POWER_RUNIC then
+                    self.runicCosts[id] = cost.cost or cost.minCost or 0
+                    return self.runicCosts[id]
+                end
+            end
+        end
+    end
+    return 0
+end
 function State:CanPayRunes(cost)
     if not cost then return true end
     local reserved = {}
@@ -376,6 +395,8 @@ function State:SpellCanCast(id)
         if cost.chi and self.chi < cost.chi then return false end
         if cost.runicPower and self.runicPower < cost.runicPower then return false end
     end
+    local liveRunicCost = self:RunicCost(id)
+    if liveRunicCost > 0 and self.runicPower < liveRunicCost then return false end
     local runeCost = ns.Adapt and ns.Adapt:RuneCostOf(id, self) or nil
     if runeCost and not self:CanPayRunes(runeCost) then return false end
     if not self.projected then
@@ -410,6 +431,7 @@ function State:Clone()
     for slot, r in pairs(self.runes) do c.runes[slot] = { kind = r.kind, death = r.death, ready = r.ready, remain = r.remain } end
     c.knownSpells = self.knownSpells
     c.knownAuras = self.knownAuras
+    c.runicCosts = self.runicCosts
     c.projected = true
     return c
 end
@@ -430,6 +452,8 @@ function State:ApplyCast(action)
         if cost.chi then self.chi = math.max(0, self.chi - cost.chi) end
         if cost.runicPower then self.runicPower = math.max(0, self.runicPower - cost.runicPower) end
     end
+    local liveRunicCost = self:RunicCost(id)
+    if liveRunicCost > 0 then self.runicPower = math.max(0, self.runicPower - liveRunicCost) end
     local runeCost = adapt and adapt:RuneCostOf(id, self)
     if runeCost then self:SpendRunes(runeCost) end
     local gain = adapt and adapt:GainOf(id)
@@ -439,7 +463,7 @@ function State:ApplyCast(action)
         if gain.runicPower then self.runicPower = math.min(self.maxRunicPower, self.runicPower + gain.runicPower) end
     end
 
-    local cd = adapt and adapt:CooldownOf(id) or 0
+    local cd = adapt and adapt:CooldownOf(id, self) or 0
     if cd > 0 then self.cds[id] = { remain = cd, duration = cd } end
 
     -- self-applied auras (Shuffle from Blackout Kick, Tiger Power from Tiger Palm)
