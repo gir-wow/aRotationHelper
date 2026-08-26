@@ -1,0 +1,7 @@
+# Local WowSims MoP source checkout and WeakAura export.
+wowsims/
+
+# Local development files.
+.vs/
+*.bak
+*.log

@@ -1,0 +1,27 @@
+## Interface: 50500
+## Title: aRotationHelper
+## Notes: Next-action rotation advice generated from wowsims APL data, adapted to live state.
+## Author: clwi
+## Version: 0.1.0-phase1
+## SavedVariables: aRotationHelperDB
+## DefaultState: enabled
+
+# --- core ---------------------------------------------------------------
+core/adapt.lua
+core/threat.lua
+core/targets.lua
+core/keybind.lua
+core/state.lua
+core/engine.lua
+core/rotation.lua
+
+# --- generated rotation data -------------------------------------------
+# Regenerate with:
+#   node tools/apl2lua/apl2lua.mjs --spec monk/brewmaster --preset default
+rotations/monk_brewmaster_default.lua
+
+# --- ui -----------------------------------------------------------------
+ui/display.lua
+
+# --- wiring (last: registers events and reads everything above) ---------
+aRotationHelper.lua

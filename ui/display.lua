@@ -1,0 +1,189 @@
+-- aRotationHelper / ui/display.lua
+--
+-- The overlay: one primary icon plus a dimmer forecast, a keybind, and a reason.
+--
+-- Two deliberate design rules:
+--   * The queue is a FORECAST, not a commitment. Steps 2-3 are drawn smaller and
+--     dimmer so their lower confidence is visible, because projection cannot see
+--     incoming damage.
+--   * When the survival tier fires, the queue COLLAPSES to a single icon with a
+--     distinct border. In an emergency a forecast is noise; you want one
+--     unambiguous button.
+
+local ADDON_NAME, ns = ...
+
+local Display = {}
+Display.__index = Display
+ns.Display = Display
+
+local ICON_MAIN = 52
+local ICON_QUEUE = 34
+local PAD = 6
+
+local COLOR_NORMAL = { 0, 0, 0, 0.75 }
+local COLOR_EMERGENCY = { 0.9, 0.1, 0.1, 1 }
+local COLOR_CAUTION = { 0.95, 0.7, 0.1, 1 }
+
+-- ---------------------------------------------------------------------------
+-- frame construction
+-- ---------------------------------------------------------------------------
+local function makeIcon(parent, size)
+    local f = CreateFrame("Frame", nil, parent)
+    f:SetSize(size, size)
+
+    f.tex = f:CreateTexture(nil, "ARTWORK")
+    f.tex:SetAllPoints()
+    f.tex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+
+    f.border = f:CreateTexture(nil, "BACKGROUND")
+    f.border:SetPoint("TOPLEFT", -2, 2)
+    f.border:SetPoint("BOTTOMRIGHT", 2, -2)
+    f.border:SetColorTexture(0, 0, 0, 0.8)
+
+    f.key = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    f.key:SetPoint("TOPRIGHT", -1, -1)
+    f.key:SetTextColor(1, 1, 1, 1)
+
+    f.reason = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    f.reason:SetPoint("TOP", f, "BOTTOM", 0, -2)
+    f.reason:SetTextColor(0.8, 0.8, 0.8, 1)
+
+    f:Hide()
+    return f
+end
+
+function Display:Init()
+    local root = CreateFrame("Frame", "aRotationHelperFrame", UIParent)
+    root:SetSize(ICON_MAIN + (ICON_QUEUE + PAD) * 2, ICON_MAIN + 18)
+    root:SetPoint("CENTER", UIParent, "CENTER", 0, -120)
+    root:SetMovable(true)
+    root:EnableMouse(true)
+    root:RegisterForDrag("LeftButton")
+    root:SetScript("OnDragStart", function(s) if not ns.db.locked then s:StartMoving() end end)
+    root:SetScript("OnDragStop", function(s)
+        s:StopMovingOrSizing()
+        local p, _, rp, x, y = s:GetPoint()
+        ns.db.pos = { p, rp, x, y }
+    end)
+    self.root = root
+
+    self.main = makeIcon(root, ICON_MAIN)
+    self.main:SetPoint("LEFT", root, "LEFT", 0, 0)
+
+    self.queue = {}
+    for i = 1, 2 do
+        local f = makeIcon(root, ICON_QUEUE)
+        local anchor = (i == 1) and self.main or self.queue[i - 1]
+        f:SetPoint("LEFT", anchor, "RIGHT", PAD, 0)
+        f.tex:SetAlpha(0.55)
+        self.queue[i] = f
+    end
+
+    -- Out-of-combat prepull checklist
+    local pre = CreateFrame("Frame", nil, root)
+    pre:SetPoint("BOTTOMLEFT", root, "TOPLEFT", 0, 8)
+    pre:SetSize(240, 60)
+    pre.lines = {}
+    for i = 1, 5 do
+        local fs = pre:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        fs:SetPoint("TOPLEFT", pre, "TOPLEFT", 0, -(i - 1) * 13)
+        fs:SetJustifyH("LEFT")
+        pre.lines[i] = fs
+    end
+    pre:Hide()
+    self.prepull = pre
+
+    if ns.db.pos then
+        root:ClearAllPoints()
+        root:SetPoint(ns.db.pos[1], UIParent, ns.db.pos[2], ns.db.pos[3], ns.db.pos[4])
+    end
+end
+
+-- ---------------------------------------------------------------------------
+-- rendering
+-- ---------------------------------------------------------------------------
+local function iconFor(action)
+    if action.id then
+        local _, _, icon = GetSpellInfo(action.id)
+        return icon
+    end
+    return nil
+end
+
+local function paint(frame, pick, isEmergency, caution)
+    if not pick then
+        frame:Hide()
+        return
+    end
+    local icon = iconFor(pick.action)
+    if not icon then
+        frame:Hide()
+        return
+    end
+    frame.tex:SetTexture(icon)
+    frame.key:SetText(pick.action.id and ns.Keybind:For(pick.action.id) or nil)
+    frame.reason:SetText(pick.reason)
+
+    local c = COLOR_NORMAL
+    if isEmergency then c = COLOR_EMERGENCY
+    elseif caution then c = COLOR_CAUTION end
+    frame.border:SetColorTexture(c[1], c[2], c[3], c[4])
+    frame:Show()
+end
+
+function Display:Render(queue, st)
+    if not self.root then return end
+
+    local primary = queue and queue[1]
+    if not primary then
+        self.main:Hide()
+        for i = 1, #self.queue do self.queue[i]:Hide() end
+        return
+    end
+
+    local isEmergency = primary.tier == ns.TIER.EMERGENCY
+    local caution = (not isEmergency) and ns.Adapt:Caution(st) or false
+
+    paint(self.main, primary, isEmergency, caution)
+
+    -- An emergency collapses the forecast: one unambiguous button.
+    if isEmergency then
+        for i = 1, #self.queue do self.queue[i]:Hide() end
+        return
+    end
+
+    for i = 1, #self.queue do
+        paint(self.queue[i], queue[i + 1], false, false)
+    end
+end
+
+--- Out-of-combat prepull checklist, with each item's timing offset.
+function Display:RenderPrepull(plan, st)
+    if not self.prepull then return end
+    if not plan or #plan == 0 or InCombatLockdown() then
+        self.prepull:Hide()
+        return
+    end
+    for i = 1, #self.prepull.lines do
+        local fs = self.prepull.lines[i]
+        local p = plan[i]
+        if not p then
+            fs:SetText("")
+        else
+            local name = p.action.name or (p.action.id and GetSpellInfo(p.action.id)) or "?"
+            local at = p.at and ("%.1fs"):format(p.at) or "?"
+            -- Tick off items whose buff is already up.
+            local done = p.action.id and st and st:AuraUp(p.action.id)
+            fs:SetText(("%s %s at %s"):format(done and "|cff40ff40*|r" or "|cff888888-|r", name, at))
+        end
+    end
+    self.prepull:Show()
+end
+
+function Display:Hide()
+    if self.root then
+        self.main:Hide()
+        for i = 1, #self.queue do self.queue[i]:Hide() end
+        self.prepull:Hide()
+    end
+end
