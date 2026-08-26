@@ -116,6 +116,7 @@ end
 ns.SPEC_ROTATIONS = {
     -- [classFilename][specIndex] = rotation key
     MONK = { [1] = "MONK_BREWMASTER_DEFAULT" },
+    DEATHKNIGHT = { [1] = "DEATH_KNIGHT_BLOOD_DEFAULT" },
 }
 
 --- Pick the rotation for the current class + spec, or nil if unsupported.

@@ -86,6 +86,8 @@ export const VALUES = {
   maxHealth: { type: T.ABS, lua: 'MaxHealth' },
   currentHealthPercent: { type: T.PCT, lua: 'HealthPct' },
   currentRunicPower: { type: T.ABS, lua: 'RunicPower' },
+  currentRuneCount: { type: T.INT, lua: 'RuneCount', args: { runeType: 'runeType' } },
+  currentNonDeathRuneCount: { type: T.INT, lua: 'NonDeathRuneCount', args: { runeType: 'runeType' } },
   energyTimeToTarget: { type: T.TIME, lua: 'EnergyTimeTo', args: { value: 'targetEnergy' } },
 
   // GCD
@@ -106,6 +108,7 @@ export const VALUES = {
   auraIsInactive: { type: T.BOOL, lua: 'AuraDown', args: { id: 'auraId' } },
   auraRemainingTime: { type: T.TIME, lua: 'AuraRemain', args: { id: 'auraId' } },
   auraNumStacks: { type: T.ABS, lua: 'AuraStacks', args: { id: 'auraId' } },
+  dotPercentIncrease: { type: T.PCT, lua: 'DotPercentIncrease', args: { id: 'spellId' } },
 
   // encounter / environment - live substitutions, see report section 4
   currentTime: { type: T.TIME, lua: 'CombatTime' },
@@ -128,6 +131,9 @@ export const ACTIONS = {
   // cooldown row instead, so these never win the rotation slot.
   autocastOtherCooldowns: { passive: true },
   castAllStatBuffCooldowns: { passive: true },
+  // Blood's shared core uses strict sequences containing one cast plus a 10ms
+  // wait. The wait is simulator scheduling detail; emit the single cast.
+  strictSequence: { firstCastOnly: true },
 };
 
 export const KNOWN_VALUES = new Set(Object.keys(VALUES));

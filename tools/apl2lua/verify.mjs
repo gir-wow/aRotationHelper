@@ -88,6 +88,12 @@ if (!fs.existsSync(rotPath)) {
   process.exit(1);
 }
 const rotation = JSON.parse(fs.readFileSync(rotPath, 'utf8'));
+const bloodPath = path.join(ROOT, 'tools/apl2lua/out/death_knight_blood_default.json');
+if (!fs.existsSync(bloodPath)) {
+  console.error(`missing ${path.relative(ROOT, bloodPath)} - run addon:build:blood first`);
+  process.exit(1);
+}
+const bloodRotation = JSON.parse(fs.readFileSync(bloodPath, 'utf8'));
 
 // ---------------------------------------------------------------------------
 // 1. parity between the two interpreters
@@ -108,7 +114,7 @@ for (const op of Object.keys(VALUES)) {
     `expected an entry for ${op} in engine.lua's READER or ID_READER`);
 }
 for (const op of Object.keys(ACTIONS)) {
-  check(`engine.lua knows action '${op}'`, ACTIONS[op].passive || engineLua.includes(`"${op}"`));
+  check(`engine.lua knows action '${op}'`, ACTIONS[op].passive || ACTIONS[op].firstCastOnly || engineLua.includes(`"${op}"`));
 }
 
 // Every opcode the compiled rotation actually uses must evaluate without throwing.
@@ -338,6 +344,54 @@ console.log('--- levelling (graceful degradation) ---');
     mr.pick?.action?.id === ID.KEG_SMASH,
     `got ${mr.pick ? NAME[mr.pick.action.id] || mr.pick.action.id : 'nothing'}`);
   console.log(`      (4 abilities known: ${mr.lines.length}/${rotation.lines.length} lines active)`);
+}
+
+// ---------------------------------------------------------------------------
+// 3b. Blood DK rune mapping and shared core
+// ---------------------------------------------------------------------------
+console.log('--- Blood DK core ---');
+{
+  const bloodKnown = new Set([48982, 45529, 47568, 49998, 56815, 114867, 55050, 48721, 43265, 50613, 57330]);
+  const bloodState = (over = {}) => new MockState({
+    known: bloodKnown,
+    knownAuras: new Set(),
+    runes: {
+      1: { kind: 'RuneBlood', ready: true },
+      2: { kind: 'RuneBlood', ready: true },
+      3: { kind: 'RuneFrost', ready: true },
+      4: { kind: 'RuneFrost', ready: true },
+      5: { kind: 'RuneUnholy', ready: true },
+      6: { kind: 'RuneUnholy', ready: true },
+    },
+    ...over,
+  });
+  check('Blood DK derived core has 16 lines', bloodRotation.lines.length === 16,
+    `got ${bloodRotation.lines.length}`);
+  check('Blood DK maps two Frost runes from live type 3', bloodState().RuneCount('RuneFrost') === 2);
+  check('Blood DK maps two Unholy runes from live type 2', bloodState().RuneCount('RuneUnholy') === 2);
+
+  let pick = pickRotation(activeLines(bloodRotation, bloodState()), bloodState());
+  check('Blood DK spends Frost + Unholy rune cap with Death Strike', pick?.action?.id === 49998,
+    `got ${pick?.action?.id ?? 'nothing'}`);
+
+  const noFrostUnholy = bloodState({
+    runes: {
+      1: { kind: 'RuneBlood', ready: true },
+      2: { kind: 'RuneBlood', ready: true },
+      3: { kind: 'RuneFrost', ready: false },
+      4: { kind: 'RuneFrost', ready: false },
+      5: { kind: 'RuneUnholy', ready: false },
+      6: { kind: 'RuneUnholy', ready: false },
+    },
+  });
+  pick = pickRotation(activeLines(bloodRotation, noFrostUnholy), noFrostUnholy);
+  check('Blood DK spends two Blood runes with Heart Strike', pick?.action?.id === 55050,
+    `got ${pick?.action?.id ?? 'nothing'}`);
+
+  const runic = bloodState({ runicPower: 90, runes: {} });
+  pick = pickRotation(activeLines(bloodRotation, runic), runic);
+  check('Blood DK dumps high runic power with Rune Strike', pick?.action?.id === 56815,
+    `got ${pick?.action?.id ?? 'nothing'}`);
 }
 
 // ---------------------------------------------------------------------------

@@ -146,6 +146,9 @@ function compileValue(node, ctx, where) {
           ir.other = aid.other;
         }
         if (aid.tag) ir.tag = aid.tag;
+      } else if (spec.args && spec.args.runeType) {
+        if (!o.runeType) throw new Error(`${where}: ${op} is missing its runeType`);
+        ir.runeType = o.runeType;
       }
       return { ir, type: spec.type ?? TYPES.NUM };
     }
@@ -198,8 +201,16 @@ function compileAction(node, ctx, where) {
   }
   ctx.opcodes.add(op);
 
-  const action = { op };
   const spec = ACTIONS[op];
+
+  if (spec.firstCastOnly) {
+    const first = (o.actions || []).find((nested) => nested.castSpell);
+    if (!first) throw new Error(`${where}: ${op} has no castSpell action`);
+    const nested = compileAction(first, ctx, `${where}.${op}[0]`);
+    return { action: nested.action, cond: cond ? cond.ir : nested.cond };
+  }
+
+  const action = { op };
   if (spec.args && spec.args.id) {
     const aid = actionId(o[spec.args.id]);
     if (!aid) throw new Error(`${where}: ${op} is missing its ${spec.args.id}`);

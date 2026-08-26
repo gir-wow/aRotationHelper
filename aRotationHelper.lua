@@ -184,6 +184,15 @@ frame:SetScript("OnEvent", function(_, event, ...)
         return
     end
 
+    if event == "UNIT_AURA" then
+        local unit = ...
+        if unit == "player" and rotation then
+            state:Refresh()
+            rotation:Rehydrate(state)
+        end
+        return
+    end
+
     if event == "PLAYER_REGEN_DISABLED" then
         ns.Threat:OnCombatStart()
         return

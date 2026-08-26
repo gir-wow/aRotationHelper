@@ -49,6 +49,8 @@ export const READER = {
   unitIsMoving: 'IsMoving',
   inputDelay: 'InputDelay',
   channelClipDelay: 'InputDelay',
+  currentRuneCount: 'RuneCount',
+  currentNonDeathRuneCount: 'NonDeathRuneCount',
 };
 
 // op -> State method taking a spell/aura id, mirroring ID_READER in engine.lua
@@ -64,6 +66,7 @@ export const ID_READER = {
   auraIsInactive: 'AuraDown',
   auraRemainingTime: 'AuraRemain',
   auraNumStacks: 'AuraStacks',
+  dotPercentIncrease: 'DotPercentIncrease',
 };
 
 const truthy = (v) => v !== false && v !== null && v !== undefined && v !== 0;
@@ -90,6 +93,7 @@ export function evalValue(node, S) {
   if (op === 'max') return Math.max(...node.vals.map((v) => num(evalValue(v, S))));
   if (op === 'min') return Math.min(...node.vals.map((v) => num(evalValue(v, S))));
 
+  if (op === 'currentRuneCount' || op === 'currentNonDeathRuneCount') return S[READER[op]](node.runeType);
   if (READER[op]) return S[READER[op]]();
   if (ID_READER[op]) return S[ID_READER[op]](node.id ?? node.item ?? 0);
 
@@ -147,6 +151,7 @@ export class MockState {
     this.maxEnergy = 100;
     this.energyRegen = 10;
     this.runicPower = 0;
+    this.runes = {};
     this.health = 100000;
     this.maxHealth = 100000;
     this.staggerPct = 0;
@@ -184,6 +189,13 @@ export class MockState {
   MaxEnergy() { return this.maxEnergy; }
   EnergyRegen() { return this.energyRegen; }
   RunicPower() { return this.runicPower; }
+  RuneCount(kind) {
+    return Object.values(this.runes).filter((r) => r.ready && (r.kind === kind || (kind !== 'RuneDeath' && r.death))).length;
+  }
+  NonDeathRuneCount(kind) {
+    return Object.values(this.runes).filter((r) => r.ready && !r.death && r.kind === kind).length;
+  }
+  DotPercentIncrease() { return 0; }
   Health() { return this.health; }
   MaxHealth() { return this.maxHealth; }
   HealthPct() { return this.health / this.maxHealth; }

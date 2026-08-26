@@ -20,6 +20,7 @@ core/rotation.lua
 # Regenerate with:
 #   node tools/apl2lua/apl2lua.mjs --spec monk/brewmaster --preset default
 rotations/monk_brewmaster_default.lua
+rotations/death_knight_blood_default.lua
 
 # --- ui -----------------------------------------------------------------
 ui/export.lua

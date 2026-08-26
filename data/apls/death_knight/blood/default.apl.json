@@ -1,0 +1,532 @@
+{
+  "type": "TypeAPL",
+  "simple": {
+    "cooldowns": {
+      "hpPercentForDefensives": 0.3
+    }
+  },
+  "prepullActions": [
+    {
+      "action": {
+        "castSpell": {
+          "spellId": {
+            "spellId": 48263
+          }
+        }
+      },
+      "doAtValue": {
+        "const": {
+          "val": "-36s"
+        }
+      }
+    },
+    {
+      "action": {
+        "castSpell": {
+          "spellId": {
+            "otherId": "OtherActionPotion"
+          }
+        }
+      },
+      "doAtValue": {
+        "const": {
+          "val": "-1s"
+        }
+      }
+    }
+  ],
+  "priorityList": [
+    {
+      "action": {
+        "condition": {
+          "auraIsActive": {
+            "auraId": {
+              "spellId": 96171
+            }
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 48982
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "and": {
+            "vals": [
+              {
+                "auraIsKnown": {
+                  "auraId": {
+                    "spellId": 114851
+                  }
+                }
+              },
+              {
+                "cmp": {
+                  "op": "OpLe",
+                  "lhs": {
+                    "currentHealthPercent": {}
+                  },
+                  "rhs": {
+                    "const": {
+                      "val": "50%"
+                    }
+                  }
+                }
+              },
+              {
+                "not": {
+                  "val": {
+                    "spellCanCast": {
+                      "spellId": {
+                        "spellId": 49998,
+                        "tag": 1
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "strictSequence": {
+          "actions": [
+            {
+              "castSpell": {
+                "spellId": {
+                  "spellId": 45529
+                }
+              }
+            },
+            {
+              "wait": {
+                "duration": {
+                  "const": {
+                    "val": "10ms"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "and": {
+            "vals": [
+              {
+                "cmp": {
+                  "op": "OpLe",
+                  "lhs": {
+                    "currentHealthPercent": {}
+                  },
+                  "rhs": {
+                    "const": {
+                      "val": "45%"
+                    }
+                  }
+                }
+              },
+              {
+                "not": {
+                  "val": {
+                    "spellCanCast": {
+                      "spellId": {
+                        "spellId": 49998,
+                        "tag": 1
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 47568
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "autocastOtherCooldowns": {}
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "cmp": {
+            "op": "OpLe",
+            "lhs": {
+              "currentTime": {}
+            },
+            "rhs": {
+              "const": {
+                "val": "0.3s"
+              }
+            }
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 49998,
+            "tag": 1
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "and": {
+            "vals": [
+              {
+                "cmp": {
+                  "op": "OpEq",
+                  "lhs": {
+                    "currentRuneCount": {
+                      "runeType": "RuneFrost"
+                    }
+                  },
+                  "rhs": {
+                    "const": {
+                      "val": "2"
+                    }
+                  }
+                }
+              },
+              {
+                "cmp": {
+                  "op": "OpEq",
+                  "lhs": {
+                    "currentRuneCount": {
+                      "runeType": "RuneUnholy"
+                    }
+                  },
+                  "rhs": {
+                    "const": {
+                      "val": "2"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 49998,
+            "tag": 1
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "cmp": {
+            "op": "OpGe",
+            "lhs": {
+              "currentRunicPower": {}
+            },
+            "rhs": {
+              "const": {
+                "val": "90"
+              }
+            }
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 56815
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "and": {
+            "vals": [
+              {
+                "isExecutePhase": {
+                  "threshold": "E35"
+                }
+              },
+              {
+                "cmp": {
+                  "op": "OpGe",
+                  "lhs": {
+                    "currentNonDeathRuneCount": {
+                      "runeType": "RuneBlood"
+                    }
+                  },
+                  "rhs": {
+                    "const": {
+                      "val": "1"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 114867,
+            "tag": 1
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "cmp": {
+            "op": "OpGe",
+            "lhs": {
+              "currentNonDeathRuneCount": {
+                "runeType": "RuneBlood"
+              }
+            },
+            "rhs": {
+              "const": {
+                "val": "2"
+              }
+            }
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 55050
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "and": {
+            "vals": [
+              {
+                "auraIsKnown": {
+                  "auraId": {
+                    "spellId": 114851
+                  }
+                }
+              },
+              {
+                "cmp": {
+                  "op": "OpGe",
+                  "lhs": {
+                    "auraNumStacks": {
+                      "auraId": {
+                        "spellId": 114851
+                      }
+                    }
+                  },
+                  "rhs": {
+                    "const": {
+                      "val": "11"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "strictSequence": {
+          "actions": [
+            {
+              "castSpell": {
+                "spellId": {
+                  "spellId": 45529
+                }
+              }
+            },
+            {
+              "wait": {
+                "duration": {
+                  "const": {
+                    "val": "10ms"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "and": {
+            "vals": [
+              {
+                "auraIsActive": {
+                  "auraId": {
+                    "spellId": 81141
+                  }
+                }
+              },
+              {
+                "or": {
+                  "vals": [
+                    {
+                      "cmp": {
+                        "op": "OpGe",
+                        "lhs": {
+                          "dotPercentIncrease": {
+                            "spellId": {
+                              "spellId": 55078
+                            }
+                          }
+                        },
+                        "rhs": {
+                          "const": {
+                            "val": "0%"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "cmp": {
+                        "op": "OpGe",
+                        "lhs": {
+                          "dotPercentIncrease": {
+                            "spellId": {
+                              "spellId": 55095
+                            }
+                          }
+                        },
+                        "rhs": {
+                          "const": {
+                            "val": "0%"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 48721
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "and": {
+            "vals": [
+              {
+                "auraIsActive": {
+                  "auraId": {
+                    "spellId": 81141
+                  }
+                }
+              },
+              {
+                "spellCanCast": {
+                  "spellId": {
+                    "spellId": 43265
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 43265
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "auraIsActive": {
+            "auraId": {
+              "spellId": 81141
+            }
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 48721
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "condition": {
+          "and": {
+            "vals": [
+              {
+                "not": {
+                  "val": {
+                    "spellCanCast": {
+                      "spellId": {
+                        "spellId": 56815
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "cmp": {
+                  "op": "OpGe",
+                  "lhs": {
+                    "currentRunicPower": {}
+                  },
+                  "rhs": {
+                    "const": {
+                      "val": "15"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 50613
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "castSpell": {
+          "spellId": {
+            "spellId": 56815
+          }
+        }
+      }
+    },
+    {
+      "action": {
+        "castSpell": {
+          "spellId": {
+            "spellId": 57330
+          }
+        }
+      }
+    }
+  ]
+}

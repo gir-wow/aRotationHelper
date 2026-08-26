@@ -72,6 +72,8 @@ local READER = {
     unitIsMoving = "IsMoving",
     inputDelay = "InputDelay",
     channelClipDelay = "InputDelay",
+    currentRuneCount = "RuneCount",
+    currentNonDeathRuneCount = "NonDeathRuneCount",
 }
 
 -- ops that take a single spell/aura id
@@ -87,6 +89,7 @@ local ID_READER = {
     auraIsInactive = "AuraDown",
     auraRemainingTime = "AuraRemain",
     auraNumStacks = "AuraStacks",
+    dotPercentIncrease = "DotPercentIncrease",
 }
 
 local EXECUTE = {
@@ -146,6 +149,9 @@ function eval(node, S)
 
     reader = ID_READER[op]
     if reader then return S[reader](S, node.id or node.item or 0) end
+
+    if op == "currentRuneCount" then return S:RuneCount(node.runeType) end
+    if op == "currentNonDeathRuneCount" then return S:NonDeathRuneCount(node.runeType) end
 
     if op == "energyTimeToTarget" then return S:EnergyTimeTo(num(eval(node.target, S))) end
     if op == "isExecutePhase" then return S:ExecutePhase(EXECUTE[node.threshold] or 0.20) end

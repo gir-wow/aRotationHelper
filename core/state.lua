@@ -23,6 +23,16 @@ local POWER_ENERGY = 3
 local POWER_RUNIC = 6
 local POWER_CHI = 12
 
+-- Live MoP Classic `/arh runes` verification:
+-- slots 1-2 Blood (1), slots 3-4 Frost (3), slots 5-6 Unholy (2).
+-- WowSims uses Frost=2 and Unholy=3, so keep the conversion here.
+local LIVE_TO_APL_RUNE = {
+    [1] = "RuneBlood",
+    [2] = "RuneUnholy",
+    [3] = "RuneFrost",
+    [4] = "RuneDeath",
+}
+
 -- Stagger tier auras. The sim compares damagePerTick/maxHealth against 3% and
 -- 6%, which are exactly these auras' thresholds -- so aura presence gives us the
 -- comparison for free, with no arithmetic and no UnitStagger dependency.
@@ -71,6 +81,7 @@ function State.New()
     s.chi, s.maxChi = 0, 4
     s.energy, s.maxEnergy, s.energyRegen = 0, 100, 10
     s.runicPower = 0
+    s.runes = {}
     s.health, s.maxHealth = 1, 1
     s.staggerPct = 0
     s.gcdRemain = 0
@@ -101,6 +112,7 @@ function State:Refresh()
     self.energyRegen = 10 * (1 + haste())
 
     self.runicPower = UnitPower("player", POWER_RUNIC) or 0
+    self:RefreshRunes(now)
 
     self.health = UnitHealth("player") or 1
     self.maxHealth = math.max(1, UnitHealthMax("player") or 1)
@@ -138,6 +150,21 @@ function State:Refresh()
     self.moving = (GetUnitSpeed and GetUnitSpeed("player") or 0) > 0
     self.combatTime = ns.Threat and ns.Threat:CombatTime() or 0
     self.numTargets = ns.Targets and ns.Targets:Count() or 1
+end
+
+function State:RefreshRunes(now)
+    wipe(self.runes)
+    if not GetRuneType or not GetRuneCooldown then return end
+    for slot = 1, 6 do
+        local rawType = GetRuneType(slot)
+        local start, duration, ready = GetRuneCooldown(slot)
+        self.runes[slot] = {
+            kind = LIVE_TO_APL_RUNE[rawType],
+            death = rawType == 4,
+            ready = ready and true or false,
+            remain = (not ready and start and duration) and math.max(0, start + duration - now) or 0,
+        }
+    end
 end
 
 --- Stagger as a fraction of max health, derived from the tier auras.
@@ -215,6 +242,23 @@ function State:Energy() return self.energy end
 function State:MaxEnergy() return self.maxEnergy end
 function State:EnergyRegen() return self.energyRegen end
 function State:RunicPower() return self.runicPower end
+function State:RuneCount(kind)
+    local count = 0
+    for _, rune in pairs(self.runes) do
+        if rune.ready and (rune.kind == kind or (kind ~= "RuneDeath" and rune.death)) then
+            count = count + 1
+        end
+    end
+    return count
+end
+function State:NonDeathRuneCount(kind)
+    local count = 0
+    for _, rune in pairs(self.runes) do
+        if rune.ready and not rune.death and rune.kind == kind then count = count + 1 end
+    end
+    return count
+end
+function State:DotPercentIncrease(id) return 0 end
 function State:Health() return self.health end
 function State:MaxHealth() return self.maxHealth end
 function State:HealthPct() return self.health / self.maxHealth end
