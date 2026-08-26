@@ -168,6 +168,12 @@ function Adapt:SummonsPet(id)
     local e = ECON[id]
     return e and e.summonsPet or false
 end
+function Adapt:ConsumesAura(id, st)
+    if (id == S.BLOOD_BOIL or id == S.DEATH_AND_DECAY) and st:AuraUp(S.CRIMSON_SCOURGE) then
+        return S.CRIMSON_SCOURGE
+    end
+    return nil
+end
 
 -- ---------------------------------------------------------------------------
 -- configuration + playstyle profiles
@@ -414,7 +420,13 @@ end
 
 function Adapt:AllowRotation(action, st)
     local _, classFile = UnitClass("player")
-    return classFile ~= "DEATHKNIGHT" or st:HasTarget()
+    if classFile ~= "DEATHKNIGHT" then return true end
+    if not st:HasTarget() then return false end
+    -- Blood Boil replaces Heart Strike as the Blood-rune dump once the live
+    -- target counter has held at three or more enemies long enough to enter
+    -- AoE mode. Death Strike and Soul Reaper retain their earlier priorities.
+    if action and action.id == S.HEART_STRIKE and ns.Targets:IsAoE() then return false end
+    return true
 end
 
 -- ---------------------------------------------------------------------------
@@ -429,13 +441,23 @@ local FILLER_BY_CLASS = {
 function Adapt:Filler(st)
     local _, classFile = UnitClass("player")
     if classFile == "DEATHKNIGHT" then
+        -- Crimson Scourge is a free Blood Boil. Consume it regardless of target
+        -- count before spending a real rune on a dump.
+        if st:AuraUp(S.CRIMSON_SCOURGE) and st:SpellCanCast(S.BLOOD_BOIL) then
+            return {
+                action = { op = "castSpell", id = S.BLOOD_BOIL },
+                tier = ns.TIER.FILLER,
+                reason = "Crimson Scourge",
+            }
+        end
         -- Every supplied Blood APL has this as a hidden line: when Frost and
         -- Unholy runes are still regenerating, spend the available Blood rune
         -- rather than leaving an empty GCD. The strict shared-core line only
         -- retained the two-Blood-rune cap case.
-        if st:SpellCanCast(S.HEART_STRIKE) then
+        local dump = ns.Targets:IsAoE() and S.BLOOD_BOIL or S.HEART_STRIKE
+        if st:SpellCanCast(dump) then
             return {
-                action = { op = "castSpell", id = S.HEART_STRIKE },
+                action = { op = "castSpell", id = dump },
                 tier = ns.TIER.FILLER,
                 reason = "blood rune",
             }

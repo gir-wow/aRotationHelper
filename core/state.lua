@@ -479,6 +479,8 @@ function State:ApplyCast(action)
     if liveRunicCost > 0 then self.runicPower = math.max(0, self.runicPower - liveRunicCost) end
     local runeCost = adapt and adapt:RuneCostOf(id, self)
     if runeCost then self:SpendRunes(runeCost) end
+    local consumedAura = adapt and adapt:ConsumesAura(id, self)
+    if consumedAura then self.auras[consumedAura] = nil end
     local gain = adapt and adapt:GainOf(id, self)
     if gain then
         if gain.chi then self.chi = math.min(self.maxChi, self.chi + gain.chi) end
