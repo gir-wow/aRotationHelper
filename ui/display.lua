@@ -150,8 +150,12 @@ function Display:Render(queue, st)
     if not primary then
         self.main:Hide()
         for i = 1, #self.queue do self.queue[i]:Hide() end
-        self.idle:SetText("WAIT")
-        self.idle:Show()
+        if st and st:HasTarget() then
+            self.idle:SetText("WAIT")
+            self.idle:Show()
+        else
+            self.idle:Hide()
+        end
         return
     end
 
