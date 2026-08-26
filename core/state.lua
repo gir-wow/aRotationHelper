@@ -70,6 +70,15 @@ local function haste()
     return 0
 end
 
+local function spellCooldown(id)
+    if C_Spell and C_Spell.GetSpellCooldown then
+        local info = C_Spell.GetSpellCooldown(id)
+        if type(info) == "table" then return info.startTime, info.duration, info.isEnabled end
+    end
+    if GetSpellCooldown then return GetSpellCooldown(id) end
+    return nil, nil, nil
+end
+
 -- ---------------------------------------------------------------------------
 -- construction
 -- ---------------------------------------------------------------------------
@@ -105,6 +114,11 @@ end
 -- ---------------------------------------------------------------------------
 function State:Refresh()
     local now = GetTime()
+
+    -- Cooldowns must be fresh for every live evaluation. SPELL_UPDATE_COOLDOWN
+    -- is an optimisation hint, not a reliable substitute: a zero cached before
+    -- the cast must never make that spell appear usable afterwards.
+    wipe(self.cds)
 
     self.chi = UnitPower("player", POWER_CHI) or 0
     self.maxChi = UnitPowerMax("player", POWER_CHI) or 4
@@ -204,7 +218,7 @@ function State:ComputeStaggerPct()
 end
 
 function State:ComputeGcdRemain()
-    local start, duration = GetSpellCooldown(61304) -- the global-cooldown spell
+    local start, duration = spellCooldown(61304) -- the global-cooldown spell
     if start and duration and duration > 0 then
         return math.max(0, start + duration - GetTime())
     end
@@ -235,7 +249,7 @@ function State:CdRemain(id)
     local c = self.cds[id]
     if c then return c.remain end
     if self.projected then return 0 end
-    local start, duration = GetSpellCooldown(id)
+    local start, duration = spellCooldown(id)
     if start and duration and duration > 0 then
         local remain = math.max(0, start + duration - GetTime())
         self.cds[id] = { remain = remain, duration = duration }
