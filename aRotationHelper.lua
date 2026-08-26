@@ -172,7 +172,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
         loadRotation()
         refreshKnownSpells()
         if rotation then rotation:Rehydrate(state) end
-        ns.Log(("%s loaded."):format(ns.version))
+        ns.Export:Add(("%s loaded."):format(ns.version))
         return
     end
 
