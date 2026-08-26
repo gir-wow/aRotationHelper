@@ -55,7 +55,7 @@ end
 function Display:Init()
     local root = CreateFrame("Frame", "aRotationHelperFrame", UIParent)
     root:SetSize(ICON_MAIN + (ICON_QUEUE + PAD) * 2, ICON_MAIN + 18)
-    root:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 500, 585)
+    root:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 1100, 585)
     root:SetMovable(true)
     root:EnableMouse(true)
     root:RegisterForDrag("LeftButton")
@@ -93,6 +93,13 @@ function Display:Init()
     pre:Hide()
     self.prepull = pre
 
+    -- Earlier versions saved the initial far-left placement, which means a
+    -- changed default never reaches existing users. Move that one-time layout
+    -- to the player's unit-frame area; later drag positions remain untouched.
+    if not ns.db.positionVersion or ns.db.positionVersion < 2 then
+        ns.db.pos = { "BOTTOMLEFT", "BOTTOMLEFT", 1100, 585 }
+        ns.db.positionVersion = 2
+    end
     if ns.db.pos then
         root:ClearAllPoints()
         root:SetPoint(ns.db.pos[1], UIParent, ns.db.pos[2], ns.db.pos[3], ns.db.pos[4])
