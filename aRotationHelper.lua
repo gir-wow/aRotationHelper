@@ -5,7 +5,7 @@
 
 local ADDON_NAME, ns = ...
 
-ns.version = "0.1.0-phase9"
+ns.version = "0.1.0-phase10"
 
 -- ---------------------------------------------------------------------------
 -- debug
@@ -90,10 +90,6 @@ local function update()
     local depth = (ns.db and ns.db.queueDepth) or 3
     lastQueue = engine:Queue(state, depth)
     ns.Display:Render(lastQueue, state)
-
-    if not InCombatLockdown() then
-        ns.Display:RenderPrepull(rotation:PrepullPlan(state), state)
-    end
 end
 
 frame:SetScript("OnUpdate", function(_, elapsed)
@@ -283,6 +279,12 @@ SlashCmdList["AROTATIONHELPER"] = function(msg)
         end
         local ttl = state and ns.Threat:TimeToLive(state)
         lines[#lines + 1] = ("targets: %d (%s)  ttl: %s"):format(ns.Targets.lastCount, ns.Targets.mode, ttl and ("%.1fs"):format(ttl) or "n/a")
+        if state then
+            local glyphs = {}
+            for id in pairs(state.glyphs) do glyphs[#glyphs + 1] = id end
+            table.sort(glyphs)
+            lines[#lines + 1] = #glyphs > 0 and ("glyphs: " .. table.concat(glyphs, ", ")) or "glyphs: none detected"
+        end
         ns.Log(table.concat(lines, "\n"))
     elseif cmd == "runes" then
         ns.Runes:PrintSnapshot()

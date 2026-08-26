@@ -68,6 +68,9 @@ local S = {
     BLOOD_PLAGUE = 55078,
     FROST_FEVER = 55095,
     RAISE_DEAD = 46584,
+    GLYPH_OUTBREAK = 43826,
+    GLYPH_LOUD_HORN = 104047,
+    GLYPH_LONG_WINTER = 104101,
     STAGGER_LIGHT = 124275,
     STAGGER_MODERATE = 124274,
     STAGGER_HEAVY = 124273,
@@ -128,11 +131,15 @@ function Adapt:CostOf(id)
     if not (e.energy or e.chi or e.runicPower) then return nil end
     return e
 end
-function Adapt:GainOf(id)
+function Adapt:GainOf(id, st)
     local e = ECON[id]
     if not e then return nil end
     if not (e.gainChi or e.gainEnergy or e.gainRunicPower) then return nil end
-    return { chi = e.gainChi, energy = e.gainEnergy, runicPower = e.gainRunicPower }
+    local runicPower = e.gainRunicPower
+    if id == S.HORN_OF_WINTER and st and st:HasGlyph(S.GLYPH_LOUD_HORN) then
+        runicPower = 20
+    end
+    return { chi = e.gainChi, energy = e.gainEnergy, runicPower = runicPower }
 end
 function Adapt:RuneCostOf(id, st)
     local e = ECON[id]
@@ -144,7 +151,8 @@ function Adapt:RuneCostOf(id, st)
     return e.runes
 end
 function Adapt:CooldownOf(id, st)
-    if id == S.OUTBREAK and st and st:RunicCost(id) > 0 then return 0 end
+    if id == S.OUTBREAK and st and (st:HasGlyph(S.GLYPH_OUTBREAK) or st:RunicCost(id) > 0) then return 0 end
+    if id == S.HORN_OF_WINTER and st and st:HasGlyph(S.GLYPH_LOUD_HORN) then return 40 end
     local e = ECON[id]
     return e and e.cd or 0
 end

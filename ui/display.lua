@@ -44,6 +44,10 @@ local function makeIcon(parent, size)
     f.key:SetPoint("TOPRIGHT", -1, -1)
     f.key:SetTextColor(1, 1, 1, 1)
 
+    f.cooldown = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    f.cooldown:SetPoint("CENTER", f, "CENTER", 0, 0)
+    f.cooldown:SetTextColor(1, 1, 1, 1)
+
     f.reason = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     f.reason:SetPoint("TOP", f, "BOTTOM", 0, -2)
     f.reason:SetTextColor(0.8, 0.8, 0.8, 1)
@@ -122,7 +126,7 @@ local function iconFor(action)
     return nil
 end
 
-local function paint(frame, pick, isEmergency, caution)
+local function paint(frame, pick, isEmergency, caution, st)
     if not pick then
         frame:Hide()
         return
@@ -135,6 +139,8 @@ local function paint(frame, pick, isEmergency, caution)
     frame.tex:SetTexture(icon)
     frame.key:SetText(pick.action.id and ns.Keybind:For(pick.action.id) or nil)
     frame.reason:SetText(pick.reason)
+    local remain = pick.action.id and st and st:CdRemain(pick.action.id) or 0
+    frame.cooldown:SetText(remain and remain > 0 and ("%.1f"):format(remain) or "")
 
     local c = COLOR_NORMAL
     if isEmergency then c = COLOR_EMERGENCY
@@ -148,23 +154,29 @@ function Display:Render(queue, st)
 
     local primary = queue and queue[1]
     if not primary then
-        self.main:Hide()
-        for i = 1, #self.queue do self.queue[i]:Hide() end
-        if st and st:HasTarget() then
-            self.idle:SetText("WAIT")
-            self.idle:Show()
+        self.idle:Hide()
+        -- Keep the last actionable forecast visible while resources or a
+        -- cooldown recover. Removing all icons is less useful than showing
+        -- the cooldown on the next button.
+        if st and st:HasTarget() and self.lastQueue and self.lastQueue[1] then
+            paint(self.main, self.lastQueue[1], false, false, st)
+            for i = 1, #self.queue do
+                paint(self.queue[i], self.lastQueue[i + 1], false, false, st)
+            end
         else
-            self.idle:Hide()
+            self.main:Hide()
+            for i = 1, #self.queue do self.queue[i]:Hide() end
         end
         return
     end
 
     self.idle:Hide()
+    self.lastQueue = queue
 
     local isEmergency = primary.tier == ns.TIER.EMERGENCY
     local caution = (not isEmergency) and ns.Adapt:Caution(st) or false
 
-    paint(self.main, primary, isEmergency, caution)
+    paint(self.main, primary, isEmergency, caution, st)
 
     -- An emergency collapses the forecast: one unambiguous button.
     if isEmergency then
@@ -173,7 +185,7 @@ function Display:Render(queue, st)
     end
 
     for i = 1, #self.queue do
-        paint(self.queue[i], queue[i + 1], false, false)
+        paint(self.queue[i], queue[i + 1], false, false, st)
     end
 end
 

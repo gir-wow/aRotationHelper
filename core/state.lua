@@ -93,6 +93,7 @@ function State.New()
     s.targetAuras = {}  -- player-applied debuffs on the current target
     s.cds = {}          -- [spellId] = { remain, duration }
     s.runicCosts = {}   -- live spell costs; required for glyph/talent variants
+    s.glyphs = {}       -- [glyphSpellId] = true
     s.knownSpells = {}  -- [spellId] = true
     s.knownAuras = {}   -- [spellId] = true  (aura seen at least once this session)
     s.chi, s.maxChi = 0, 4
@@ -140,6 +141,7 @@ function State:Refresh()
     self.runicPower = UnitPower("player", POWER_RUNIC) or 0
     self.maxRunicPower = UnitPowerMax("player", POWER_RUNIC) or 100
     if self.maxRunicPower == 0 then self.maxRunicPower = 100 end
+    self:RefreshGlyphs()
     self:RefreshRunes(now)
 
     self.health = UnitHealth("player") or 1
@@ -191,6 +193,25 @@ function State:Refresh()
     self.petAlive = UnitExists("pet") and not (UnitIsDead and UnitIsDead("pet")) or false
     self.combatTime = ns.Threat and ns.Threat:CombatTime() or 0
     self.numTargets = ns.Targets and ns.Targets:Count() or 1
+end
+
+--- Read the equipped glyph spell IDs for the active specialization. Mists
+-- clients return the glyph ID as the fourth result; older compatible clients
+-- return it as the third result, so accept both forms.
+function State:RefreshGlyphs()
+    wipe(self.glyphs)
+    if not GetNumGlyphSockets or not GetGlyphSocketInfo then return end
+    local group
+    if C_SpecializationInfo and C_SpecializationInfo.GetActiveSpecGroup then
+        group = C_SpecializationInfo.GetActiveSpecGroup(false)
+    end
+    for slot = 1, GetNumGlyphSockets() do
+        local ok, enabled, _, third, fourth = pcall(GetGlyphSocketInfo, slot, group, false, "player")
+        if ok and enabled then
+            local glyphId = fourth or third
+            if glyphId and glyphId > 0 then self.glyphs[glyphId] = true end
+        end
+    end
 end
 
 function State:RefreshRunes(now)
@@ -254,6 +275,7 @@ function State:AuraKnown(id)
 end
 
 function State:SpellKnown(id) return self.knownSpells[id] == true end
+function State:HasGlyph(id) return self.glyphs[id] == true end
 
 function State:CdRemain(id)
     local c = self.cds[id]
@@ -432,6 +454,7 @@ function State:Clone()
     c.knownSpells = self.knownSpells
     c.knownAuras = self.knownAuras
     c.runicCosts = self.runicCosts
+    c.glyphs = self.glyphs
     c.projected = true
     return c
 end
@@ -456,7 +479,7 @@ function State:ApplyCast(action)
     if liveRunicCost > 0 then self.runicPower = math.max(0, self.runicPower - liveRunicCost) end
     local runeCost = adapt and adapt:RuneCostOf(id, self)
     if runeCost then self:SpendRunes(runeCost) end
-    local gain = adapt and adapt:GainOf(id)
+    local gain = adapt and adapt:GainOf(id, self)
     if gain then
         if gain.chi then self.chi = math.min(self.maxChi, self.chi + gain.chi) end
         if gain.energy then self.energy = math.min(self.maxEnergy, self.energy + gain.energy) end
